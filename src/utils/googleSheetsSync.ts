@@ -1,6 +1,7 @@
 import { DEPT_CATALOG } from '../data/seedData';
 import { DepartmentId, Employee, ScheduleRecord, ShiftDef } from '../types/warehouse';
 import { getDatesInRange, getRecord, getShiftDef, isOtLocked, isShiftLocked } from './analytics';
+import { findShiftRestViolation } from './scheduleRules';
 
 const SHEETS_API = 'https://sheets.googleapis.com/v4/spreadsheets';
 
@@ -562,6 +563,7 @@ export async function syncFromGoogleSheet(params: {
   masterUpdated: number;
   schedUpdated: number;
   skippedLocked: number;
+  skippedRest: number;
   unmatchedRows: number;
 }> {
   const { spreadsheetId, accessToken, shifts, simClock, strictLock } = params;
@@ -598,6 +600,7 @@ export async function syncFromGoogleSheet(params: {
   let masterUpdated = 0;
   let schedUpdated = 0;
   let skippedLocked = 0;
+  let skippedRest = 0;
   let unmatchedRows = 0;
 
   let rangeCursor = 0;
@@ -720,7 +723,7 @@ export async function syncFromGoogleSheet(params: {
         const effectiveRole = curRec.role || nextEmployees[empIdx].role;
         const nextRole = strictLock && sLock.locked ? effectiveRole : roleCell || effectiveRole;
 
-        const nextShiftCode = strictLock && sLock.locked ? curRec.shiftCode : resolvedShift.code;
+        let nextShiftCode = strictLock && sLock.locked ? curRec.shiftCode : resolvedShift.code;
         const nextOtHours = strictLock && oLock.locked ? curRec.otHours : otVal;
 
         if (strictLock && sLock.locked && oLock.locked) {
@@ -732,6 +735,14 @@ export async function syncFromGoogleSheet(params: {
             skippedLocked++;
           }
           continue;
+        }
+
+        if (
+          nextShiftCode !== curRec.shiftCode &&
+          findShiftRestViolation(dateYmd, empId, nextShiftCode, shifts, nextRecords)
+        ) {
+          nextShiftCode = curRec.shiftCode;
+          skippedRest++;
         }
 
         const changed =
@@ -761,6 +772,7 @@ export async function syncFromGoogleSheet(params: {
     masterUpdated,
     schedUpdated,
     skippedLocked,
+    skippedRest,
     unmatchedRows,
   };
 }

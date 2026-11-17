@@ -77,7 +77,9 @@ export function MasterDataTab({
   onToast,
 }: MasterDataTabProps) {
   const [sheetActionBusy, setSheetActionBusy] = useState(false);
-  const [sheetFeedback, setSheetFeedback] = useState<{ msg: string; tone: 'positive' | 'error' } | null>(null);
+  const [sheetFeedback, setSheetFeedback] = useState<{ msg: string; tone: 'positive' | 'warning' | 'error' } | null>(
+    null
+  );
   const [confirmModal, setConfirmModal] = useState<{
     mode: 'catalog_only' | 'full_overwrite';
     spreadsheetId: string;
@@ -325,15 +327,24 @@ export function MasterDataTab({
     setSheetFeedback(null);
     try {
       const res = (await onSyncFromGoogleSheet()) as
-        | { title: string; schedUpdated: number; masterUpdated: number; skippedLocked: number; unmatchedRows: number }
+        | {
+            title: string;
+            schedUpdated: number;
+            masterUpdated: number;
+            skippedLocked: number;
+            skippedRest: number;
+            unmatchedRows: number;
+          }
         | null
         | undefined;
       if (res) {
         setSheetFeedback({
           msg: `Đã đọc Google Sheet "${res.title}": cập nhật ${res.schedUpdated} dòng lịch, ${res.masterUpdated} nhân sự${
             res.skippedLocked > 0 ? `, bỏ qua ${res.skippedLocked} dòng bị khóa theo luật D-1 / D+2` : ''
-          }${res.unmatchedRows > 0 ? `, ${res.unmatchedRows} dòng chưa khớp Mã NV / Ca làm` : ''}.`,
-          tone: 'positive',
+          }${res.skippedRest > 0 ? `, từ chối ${res.skippedRest} ca do thời gian nghỉ dưới 12 giờ` : ''}${
+            res.unmatchedRows > 0 ? `, ${res.unmatchedRows} dòng chưa khớp Mã NV / Ca làm` : ''
+          }.`,
+          tone: res.skippedRest > 0 ? 'warning' : 'positive',
         });
       }
     } catch (err) {
@@ -602,7 +613,9 @@ export function MasterDataTab({
             className={`border px-3.5 py-2.5 text-sm ${
               sheetFeedback.tone === 'positive'
                 ? 'border-[#198038]/30 bg-[#defbe6] text-[#0f172a]'
-                : 'border-[#da1e28]/30 bg-[#fff1f1] text-[#0f172a]'
+                : sheetFeedback.tone === 'warning'
+                  ? 'border-[#8a6100]/30 bg-[#fcf4d6] text-[#0f172a]'
+                  : 'border-[#da1e28]/30 bg-[#fff1f1] text-[#0f172a]'
             }`}
           >
             {sheetFeedback.msg}

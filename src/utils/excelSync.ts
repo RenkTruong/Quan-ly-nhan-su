@@ -13,6 +13,7 @@ import {
   isOtLocked,
   isShiftLocked,
 } from './analytics';
+import { findShiftRestViolation } from './scheduleRules';
 
 function xmlEscape(str: unknown): string {
   return String(str ?? '')
@@ -471,6 +472,7 @@ function parseWorksheetRows(xmlStr: string, sharedStrings: string[]): Array<Arra
 export async function parseAndImportScheduleFile(params: {
   file: File;
   employees: Employee[];
+  shifts: ShiftDef[];
   records: Record<string, ScheduleRecord>;
   simClock: string;
   strictLock: boolean;
@@ -480,6 +482,7 @@ export async function parseAndImportScheduleFile(params: {
   masterUpdated: number;
   schedUpdated: number;
   skippedLocked: number;
+  skippedRest: number;
 }> {
   const { file, simClock, strictLock } = params;
   const nextEmployees = params.employees.map((e) => ({ ...e }));
@@ -489,6 +492,7 @@ export async function parseAndImportScheduleFile(params: {
   let masterUpdated = 0;
   let schedUpdated = 0;
   let skippedLocked = 0;
+  let skippedRest = 0;
 
   if (file.name.toLowerCase().endsWith('.csv')) {
     const text = new TextDecoder('utf-8').decode(bytes).replace(/^\uFEFF/, '');
@@ -504,7 +508,7 @@ export async function parseAndImportScheduleFile(params: {
       const sLock = isShiftLocked(dateYmd, simClock);
       const oLock = isOtLocked(dateYmd, simClock);
       const cur = getRecord(nextRecords, dateYmd, empId);
-      const nextShift = strictLock && sLock.locked ? cur.shiftCode : shiftCode;
+      let nextShift = strictLock && sLock.locked ? cur.shiftCode : shiftCode;
       const nextOt = strictLock && oLock.locked ? cur.otHours : otHours;
       const employeeRole = params.employees.find((emp) => emp.id === empId)?.role || '';
       const importedRole = (cols[4] || '').trim();
@@ -512,6 +516,13 @@ export async function parseAndImportScheduleFile(params: {
       if (strictLock && sLock.locked && oLock.locked) {
         skippedLocked++;
       } else {
+        if (
+          nextShift !== cur.shiftCode &&
+          findShiftRestViolation(dateYmd, empId, nextShift, params.shifts, nextRecords)
+        ) {
+          nextShift = cur.shiftCode;
+          skippedRest++;
+        }
         nextRecords[`${dateYmd}|${empId}`] = {
           shiftCode: nextShift,
           otHours: nextOt,
@@ -608,8 +619,17 @@ export async function parseAndImportScheduleFile(params: {
           continue;
         }
 
+        let nextShift = strictLock && sLock.locked ? cur.shiftCode : shiftCode;
+        if (
+          nextShift !== cur.shiftCode &&
+          findShiftRestViolation(dateYmd, empId, nextShift, params.shifts, nextRecords)
+        ) {
+          nextShift = cur.shiftCode;
+          skippedRest++;
+        }
+
         nextRecords[`${dateYmd}|${empId}`] = {
-          shiftCode: strictLock && sLock.locked ? cur.shiftCode : shiftCode,
+          shiftCode: nextShift,
           otHours: strictLock && oLock.locked ? cur.otHours : otHours,
           role: strictLock && sLock.locked ? cur.role || masterEmp.role : role || cur.role || masterEmp.role,
           note,
@@ -625,6 +645,7 @@ export async function parseAndImportScheduleFile(params: {
     masterUpdated,
     schedUpdated,
     skippedLocked,
+    skippedRest,
   };
 }
 

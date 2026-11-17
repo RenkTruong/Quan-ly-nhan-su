@@ -5,19 +5,21 @@ import { DashboardTab } from './components/DashboardTab';
 import { MasterDataTab } from './components/MasterDataTab';
 import { MonthlyMatrixTab } from './components/MonthlyMatrixTab';
 import { ScheduleEditorTab } from './components/ScheduleEditorTab';
-import { buildSeedSchedule, DEFAULT_EMPLOYEES, DEFAULT_SHIFTS } from './data/seedData';
+import { buildSeedSchedule, DEFAULT_EMPLOYEES, DEFAULT_SHIFTS, DEPT_CATALOG } from './data/seedData';
 import { AppState, DepartmentId, Employee, ScheduleRecord, ShiftDef, TabId } from './types/warehouse';
 import {
   computeRangeAnalytics,
   formatShortVNDate,
   formatVNDate,
   formatYMD,
+  getRecord,
   isOtLocked,
   isShiftLocked,
   parseYMD,
 } from './utils/analytics';
 import { clearCachedToken, getAccessToken, googleSignIn, initAuth, logout } from './utils/googleAuth';
 import { extractSpreadsheetId, syncFromGoogleSheet } from './utils/googleSheetsSync';
+import { findShiftRestViolation } from './utils/scheduleRules';
 
 const STORAGE_KEY = 'ob_warehouse_ops_state_v1';
 
@@ -29,6 +31,34 @@ function getLiveClockString(): string {
   const hh = String(now.getHours()).padStart(2, '0');
   const mi = String(now.getMinutes()).padStart(2, '0');
   return `${y}-${m}-${d}T${hh}:${mi}`;
+}
+
+function getShiftRestWarningMessage(
+  dateYmd: string,
+  empId: string,
+  shiftCode: string,
+  shifts: ShiftDef[],
+  records: Record<string, ScheduleRecord>
+): string | null {
+  const violation = findShiftRestViolation(dateYmd, empId, shiftCode, shifts, records);
+  if (!violation) return null;
+
+  const proposedShift = shifts.find((shift) => shift.code === shiftCode);
+  if (!proposedShift) return null;
+
+  const restMinutes = Math.max(0, violation.restMinutes);
+  const restLabel =
+    restMinutes % 60 === 0
+      ? `${restMinutes / 60} giờ`
+      : `${Math.floor(restMinutes / 60)} giờ ${restMinutes % 60} phút`;
+  const adjacentShift = `ca ${violation.adjacentShift.code} (${violation.adjacentShift.timeRange}) ngày ${formatVNDate(
+    violation.adjacentDate
+  )}`;
+  const relation = violation.direction === 'before' ? `sau ${adjacentShift}` : `trước ${adjacentShift}`;
+
+  return `Cảnh báo: Không thể xếp ca ${proposedShift.code} (${proposedShift.timeRange}) ngày ${formatVNDate(
+    dateYmd
+  )} cho ${empId}: thời gian nghỉ ${relation} chỉ ${restLabel}, cần tối thiểu 12 giờ.`;
 }
 
 function normalizeStoredShifts(stored: unknown): ShiftDef[] {
@@ -248,6 +278,13 @@ export default function App() {
       showToast(lock.message, 'error');
       return;
     }
+    if (getRecord(state.records, dateYmd, empId).shiftCode !== shiftCode) {
+      const restWarning = getShiftRestWarningMessage(dateYmd, empId, shiftCode, state.shifts, state.records);
+      if (restWarning) {
+        showToast(restWarning, 'warning');
+        return;
+      }
+    }
     setState((prev) => {
       const key = `${dateYmd}|${empId}`;
       const existing = prev.records[key] || { shiftCode: 'OFF', otHours: 0, note: '' };
@@ -283,6 +320,83 @@ export default function App() {
       };
     });
     showToast(`Đã cập nhật ${clamped}h OT cho ${empId} ngày ${formatVNDate(dateYmd)}.`, 'positive');
+  };
+
+  const handleSaveManualSchedule = (
+    dateYmd: string,
+    empId: string,
+    shiftCode: string,
+    otHours: number,
+    role: string
+  ) => {
+    const employee = state.employees.find((emp) => emp.id === empId);
+    if (!employee) {
+      showToast(`Không tìm thấy nhân viên ${empId}.`, 'error');
+      return;
+    }
+
+    if (employee.status !== 'Active') {
+      showToast(`Nhân viên ${empId} đã ngừng hoạt động, không thể xếp lịch.`, 'warning');
+      return;
+    }
+
+    const currentRecord = getRecord(state.records, dateYmd, empId);
+    const shiftLock = isShiftLocked(dateYmd, liveClock);
+    const otLock = isOtLocked(dateYmd, liveClock);
+    const normalizedRole = role.trim();
+    const clampedOt = Math.max(0, Math.min(12, Number(otHours) || 0));
+    const currentRole = currentRecord.role || employee.role;
+    const employeeTask = DEPT_CATALOG.find((dept) => dept.id === employee.dept);
+    if (!normalizedRole || (normalizedRole !== currentRole && !employeeTask?.roles.includes(normalizedRole))) {
+      showToast(`Vui lòng chọn vị trí thuộc Task ${employee.dept} của nhân viên ${empId}.`, 'warning');
+      return;
+    }
+    if (!state.shifts.some((shift) => shift.code === shiftCode)) {
+      showToast(`Không tìm thấy ca làm ${shiftCode}.`, 'warning');
+      return;
+    }
+    if (
+      shiftLock.locked &&
+      (currentRecord.shiftCode !== shiftCode || currentRole !== normalizedRole)
+    ) {
+      showToast(shiftLock.message, 'error');
+      return;
+    }
+    if (otLock.locked && (Number(currentRecord.otHours) || 0) !== clampedOt) {
+      showToast(
+        `Không thể sửa OT ngày ${formatVNDate(dateYmd)} vì đã quá hạn 23:59:59 ngày D+2 (${otLock.deadlineStr}).`,
+        'error'
+      );
+      return;
+    }
+    if (!shiftLock.locked && currentRecord.shiftCode !== shiftCode) {
+      const restWarning = getShiftRestWarningMessage(dateYmd, empId, shiftCode, state.shifts, state.records);
+      if (restWarning) {
+        showToast(restWarning, 'warning');
+        return;
+      }
+    }
+
+    setState((prev) => {
+      const key = `${dateYmd}|${empId}`;
+      const existing = prev.records[key] || { shiftCode: 'OFF', otHours: 0, note: '' };
+      return {
+        ...prev,
+        records: {
+          ...prev.records,
+          [key]: {
+            ...existing,
+            shiftCode: shiftLock.locked ? existing.shiftCode : shiftCode,
+            otHours: otLock.locked ? existing.otHours : clampedOt,
+            role: normalizedRole,
+          },
+        },
+      };
+    });
+    showToast(
+      `Đã lưu lịch ${empId} ngày ${formatVNDate(dateYmd)}: ${shiftCode}, ${normalizedRole}, ${clampedOt}h OT.`,
+      'positive'
+    );
   };
 
   const handleUpdateRole = (dateYmd: string, empId: string, role: string) => {
@@ -321,27 +435,42 @@ export default function App() {
     dt.setDate(dt.getDate() - 1);
     const prevYmd = formatYMD(dt);
 
-    let copied = 0;
+    let skippedRest = 0;
+    let firstRestWarning = '';
+    const copies = state.employees
+      .filter((emp) => emp.status === 'Active')
+      .flatMap((emp) => {
+        const prevRec = getRecord(state.records, prevYmd, emp.id);
+        const curRec = getRecord(state.records, dateYmd, emp.id);
+        if (prevRec.shiftCode !== curRec.shiftCode) {
+          const restWarning = getShiftRestWarningMessage(dateYmd, emp.id, prevRec.shiftCode, state.shifts, state.records);
+          if (restWarning) {
+            skippedRest++;
+            if (!firstRestWarning) firstRestWarning = restWarning;
+            return [];
+          }
+        }
+        return [{ emp, prevRec, curRec }];
+      });
+
     setState((prev) => {
       const nextRecords = { ...prev.records };
-      prev.employees
-        .filter((e) => e.status === 'Active')
-        .forEach((emp) => {
-          const prevRec = prev.records[`${prevYmd}|${emp.id}`] || { shiftCode: 'OFF', otHours: 0, note: '' };
-          const curRec = prev.records[`${dateYmd}|${emp.id}`] || { shiftCode: 'OFF', otHours: 0, note: '' };
-          nextRecords[`${dateYmd}|${emp.id}`] = {
-            shiftCode: prevRec.shiftCode,
-            otHours: curRec.otHours || 0,
-            role: prevRec.role || emp.role,
-            note: curRec.note || '',
-          };
-          copied++;
-        });
+      copies.forEach(({ emp, prevRec, curRec }) => {
+        nextRecords[`${dateYmd}|${emp.id}`] = {
+          shiftCode: prevRec.shiftCode,
+          otHours: curRec.otHours || 0,
+          role: prevRec.role || emp.role,
+          note: curRec.note || '',
+        };
+      });
       return { ...prev, records: nextRecords };
     });
+    const result = `Đã sao chép phân ca từ ${formatVNDate(prevYmd)} sang ${formatVNDate(dateYmd)} cho ${copies.length} nhân sự.`;
     showToast(
-      `Đã sao chép phân ca từ ${formatVNDate(prevYmd)} sang ${formatVNDate(dateYmd)} cho ${copied} nhân sự.`,
-      'positive'
+      skippedRest > 0
+        ? `${result} Bỏ qua ${skippedRest} nhân sự do thời gian nghỉ dưới 12 giờ. ${firstRestWarning}`
+        : result,
+      skippedRest > 0 ? 'warning' : 'positive'
     );
   };
 
@@ -442,13 +571,15 @@ export default function App() {
         )}:${String(now.getSeconds()).padStart(2, '0')}`;
         const summary = `Cập nhật ${res.schedUpdated} dòng lịch, ${res.masterUpdated} nhân sự${
           res.skippedLocked > 0 ? `, bỏ qua ${res.skippedLocked} dòng đã khóa` : ''
-        }${res.unmatchedRows > 0 ? `, ${res.unmatchedRows} dòng chưa khớp mã` : ''}`;
+        }${res.skippedRest > 0 ? `, từ chối ${res.skippedRest} ca do thời gian nghỉ dưới 12 giờ` : ''}${
+          res.unmatchedRows > 0 ? `, ${res.unmatchedRows} dòng chưa khớp mã` : ''
+        }`;
 
         setLastSheetSyncInfo({ timeStr, title: res.title, summary });
 
-        if (res.schedUpdated > 0 || res.masterUpdated > 0) {
+        if (res.schedUpdated > 0 || res.masterUpdated > 0 || res.skippedRest > 0) {
           setState((prev) => ({ ...prev, employees: res.employees, records: res.records }));
-          showToast(`Google Sheets (${res.title}): ${summary}.`, 'positive');
+          showToast(`Google Sheets (${res.title}): ${summary}.`, res.skippedRest > 0 ? 'warning' : 'positive');
         } else if (!silent) {
           showToast(`Đã kiểm tra Google Sheets (${res.title}) — dữ liệu đã mới nhất.`, 'neutral');
         }
@@ -678,6 +809,7 @@ export default function App() {
           onUpdateShift={handleUpdateShift}
           onUpdateOt={handleUpdateOt}
           onUpdateRole={handleUpdateRole}
+          onSaveManualSchedule={handleSaveManualSchedule}
           onCopyPrevDay={handleCopyPrevDay}
           onSelectEmployee={handleSelectEmployee}
         />

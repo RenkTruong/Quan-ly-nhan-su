@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import type { FormEvent } from 'react';
 import { Copy, Lock, CheckCircle2 } from 'lucide-react';
 import { DEPT_CATALOG, getDeptColor } from '../data/seedData';
 import { DepartmentId, Employee, ScheduleRecord, ShiftDef } from '../types/warehouse';
@@ -25,6 +26,7 @@ interface ScheduleEditorTabProps {
   onUpdateShift: (dateYmd: string, empId: string, shiftCode: string) => void;
   onUpdateOt: (dateYmd: string, empId: string, otHours: number) => void;
   onUpdateRole: (dateYmd: string, empId: string, role: string) => void;
+  onSaveManualSchedule: (dateYmd: string, empId: string, shiftCode: string, otHours: number, role: string) => void;
   onCopyPrevDay: (dateYmd: string) => void;
   onSelectEmployee: (empId: string) => void;
 }
@@ -39,11 +41,18 @@ export function ScheduleEditorTab({
   onUpdateShift,
   onUpdateOt,
   onUpdateRole,
+  onSaveManualSchedule,
   onCopyPrevDay,
   onSelectEmployee,
 }: ScheduleEditorTabProps) {
   const [deptFilter, setDeptFilter] = useState<'ALL' | DepartmentId>('ALL');
   const [searchQuery, setSearchQuery] = useState('');
+  const [manualDept, setManualDept] = useState<DepartmentId>(DEPT_CATALOG[0].id);
+  const [manualEmployeeId, setManualEmployeeId] = useState('');
+  const [manualEmployeeSearch, setManualEmployeeSearch] = useState('');
+  const [manualRole, setManualRole] = useState(DEPT_CATALOG[0].roles[0] || '');
+  const [manualShiftCode, setManualShiftCode] = useState(shifts[0]?.code || '');
+  const [manualOtHours, setManualOtHours] = useState(0);
   const allPositions = useMemo(() => Array.from(new Set(DEPT_CATALOG.flatMap((dept) => dept.roles))), []);
 
   const sLock = useMemo(() => isShiftLocked(schedDate, simClock), [schedDate, simClock]);
@@ -65,6 +74,37 @@ export function ScheduleEditorTab({
       return true;
     });
   }, [employees, deptFilter, searchQuery]);
+
+  const manualTaskDef = DEPT_CATALOG.find((dept) => dept.id === manualDept);
+  const manualEmployees = useMemo(() => {
+    const query = manualEmployeeSearch.trim().toLowerCase();
+    return employees.filter(
+      (employee) =>
+        employee.status === 'Active' &&
+        employee.dept === manualDept &&
+        (!query || employee.id.toLowerCase().includes(query) || employee.name.toLowerCase().includes(query))
+    );
+  }, [employees, manualDept, manualEmployeeSearch]);
+  const manualEmployee = employees.find((employee) => employee.id === manualEmployeeId && employee.dept === manualDept);
+
+  const handleManualEmployeeChange = (empId: string) => {
+    setManualEmployeeId(empId);
+    const employee = manualEmployees.find((emp) => emp.id === empId);
+    if (!employee) return;
+
+    const record = getRecord(records, schedDate, employee.id);
+    const taskPositions = DEPT_CATALOG.find((dept) => dept.id === manualDept)?.roles || [];
+    const currentRole = record.role || employee.role;
+    setManualRole(sLock.locked || taskPositions.includes(currentRole) ? currentRole : taskPositions[0] || '');
+    setManualShiftCode(shifts.some((shift) => shift.code === record.shiftCode) ? record.shiftCode : shifts[0]?.code || '');
+    setManualOtHours(Number(record.otHours) || 0);
+  };
+
+  const handleManualSubmit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!manualEmployee || !manualRole || !manualShiftCode) return;
+    onSaveManualSchedule(schedDate, manualEmployee.id, manualShiftCode, manualOtHours, manualRole);
+  };
 
   const obDay = dayAnalytics.ob;
 
@@ -97,7 +137,11 @@ export function ScheduleEditorTab({
               type="date"
               id="sched-date"
               value={schedDate}
-              onChange={(e) => onChangeSchedDate(e.target.value)}
+              onChange={(e) => {
+                onChangeSchedDate(e.target.value);
+                setManualEmployeeId('');
+                setManualEmployeeSearch('');
+              }}
               className="h-9 w-full border border-[#cbd5e1] bg-[#f8fafc] px-2.5 text-sm text-[#0f172a]"
             />
           </div>
@@ -152,6 +196,164 @@ export function ScheduleEditorTab({
           </span>
         </div>
       </div>
+
+      <section className="min-w-0 border border-[#e2e8f0] bg-white p-4">
+        <div className="mb-3">
+          <h3 className="text-base font-semibold text-[#0f172a]">Nhập lịch thủ công</h3>
+          <p className="mt-1 text-xs text-[#64748b]">
+            Chọn Task để lọc nhân viên và vị trí cho ngày {formatVNDate(schedDate)}.
+          </p>
+        </div>
+        <form onSubmit={handleManualSubmit} className="grid gap-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-7">
+            <div className="flex min-w-0 flex-col gap-1">
+              <label htmlFor="manual-task" className="text-xs font-medium text-[#475569]">
+                Task
+              </label>
+              <select
+                id="manual-task"
+                value={manualDept}
+                onChange={(e) => {
+                  const dept = e.target.value as DepartmentId;
+                  setManualDept(dept);
+                  setManualEmployeeId('');
+                  setManualEmployeeSearch('');
+                  setManualRole(DEPT_CATALOG.find((item) => item.id === dept)?.roles[0] || '');
+                  setManualShiftCode(shifts[0]?.code || '');
+                  setManualOtHours(0);
+                }}
+                className="h-10 w-full border border-[#cbd5e1] bg-[#f8fafc] px-2.5 text-sm text-[#0f172a]"
+              >
+                {DEPT_CATALOG.map((dept) => (
+                  <option key={dept.id} value={dept.id}>
+                    {dept.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="flex min-w-0 flex-col gap-1">
+              <label htmlFor="manual-employee-search" className="text-xs font-medium text-[#475569]">
+                Tìm tên / mã NV
+              </label>
+              <input
+                id="manual-employee-search"
+                type="search"
+                value={manualEmployeeSearch}
+                onChange={(e) => {
+                  setManualEmployeeSearch(e.target.value);
+                  setManualEmployeeId('');
+                }}
+                placeholder="Nhập tên hoặc mã"
+                className="h-10 w-full border border-[#cbd5e1] bg-[#f8fafc] px-2.5 text-sm text-[#0f172a]"
+              />
+            </div>
+
+            <div className="flex min-w-0 flex-col gap-1">
+              <label htmlFor="manual-employee-id" className="text-xs font-medium text-[#475569]">
+                Mã NV
+              </label>
+              <select
+                id="manual-employee-id"
+                value={manualEmployeeId}
+                onChange={(e) => handleManualEmployeeChange(e.target.value)}
+                disabled={manualEmployees.length === 0}
+                className="h-10 w-full border border-[#cbd5e1] bg-[#f8fafc] px-2.5 text-sm text-[#0f172a] disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                <option value="">Chọn mã NV</option>
+                {manualEmployees.map((employee) => (
+                  <option key={employee.id} value={employee.id}>
+                    {employee.id}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="flex min-w-0 flex-col gap-1">
+              <label htmlFor="manual-employee-name" className="text-xs font-medium text-[#475569]">
+                Tên NV
+              </label>
+              <input
+                id="manual-employee-name"
+                value={manualEmployee?.name || ''}
+                readOnly
+                placeholder="Tự động hiển thị"
+                className="h-10 w-full border border-[#e2e8f0] bg-[#f8fafc] px-2.5 text-sm text-[#64748b]"
+              />
+            </div>
+
+            <div className="flex min-w-0 flex-col gap-1">
+              <label htmlFor="manual-position" className="text-xs font-medium text-[#475569]">
+                Vị trí
+              </label>
+              <select
+                id="manual-position"
+                value={manualRole}
+                onChange={(e) => setManualRole(e.target.value)}
+                disabled={!manualEmployee || sLock.locked}
+                className="h-10 w-full border border-[#cbd5e1] bg-[#f8fafc] px-2.5 text-sm text-[#0f172a] disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {sLock.locked && manualRole && !manualTaskDef?.roles.includes(manualRole) && (
+                  <option value={manualRole}>{manualRole}</option>
+                )}
+                {manualTaskDef?.roles.map((role) => (
+                  <option key={role} value={role}>
+                    {role}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="flex min-w-0 flex-col gap-1">
+              <label htmlFor="manual-shift" className="text-xs font-medium text-[#475569]">
+                Ca làm việc
+              </label>
+              <select
+                id="manual-shift"
+                value={manualShiftCode}
+                onChange={(e) => setManualShiftCode(e.target.value)}
+                disabled={!manualEmployee || sLock.locked}
+                className="h-10 w-full border border-[#cbd5e1] bg-[#f8fafc] px-2.5 text-sm text-[#0f172a] disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {shifts.map((shift) => (
+                  <option key={shift.code} value={shift.code}>
+                    {shift.code} · {shift.timeRange}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="flex min-w-0 flex-col gap-1">
+              <label htmlFor="manual-ot-hours" className="text-xs font-medium text-[#475569]">
+                Giờ OT
+              </label>
+              <input
+                id="manual-ot-hours"
+                type="number"
+                min={0}
+                max={12}
+                step={0.5}
+                value={manualOtHours}
+                onChange={(e) => setManualOtHours(Number(e.target.value) || 0)}
+                disabled={!manualEmployee || oLock.locked}
+                className="font-mono-num h-10 w-full border border-[#cbd5e1] bg-[#f8fafc] px-2.5 text-sm text-[#0f172a] disabled:cursor-not-allowed disabled:opacity-60"
+              />
+            </div>
+          </div>
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <span className="text-xs text-[#64748b]">
+              Nhân viên và vị trí theo Task đã chọn. Ca liền kề phải cách nhau tối thiểu 12 giờ.
+            </span>
+            <button
+              type="submit"
+              disabled={!manualEmployee || !manualRole || !manualShiftCode || (sLock.locked && oLock.locked)}
+              className="inline-flex h-10 w-full items-center justify-center bg-[#0f62fe] px-4 text-sm font-medium text-white transition-colors hover:bg-[#0043ce] disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
+            >
+              Lưu lịch thủ công
+            </button>
+          </div>
+        </form>
+      </section>
 
       {/* Daily Headcount & Operating Hours Summary (Day Shift / Night Shift) */}
       <div className="min-w-0 border border-[#e2e8f0] bg-white p-4">
