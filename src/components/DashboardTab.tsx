@@ -810,7 +810,10 @@ export function DashboardTab({
             </div>
             <h3 className="text-lg font-semibold text-[#0f172a] sm:text-xl">
               {selectedEmployee ? (
-                `Lịch làm việc & Hiệu suất: ${selectedEmployee.name}`
+                <>
+                  Lịch làm việc & Hiệu suất:{' '}
+                  <span style={{ color: getDeptColor(selectedEmployee.dept) }}>{selectedEmployee.name}</span>
+                </>
               ) : selectedDeptDef ? (
                 <>
                   Chi tiết Vận hành{' '}
@@ -1132,7 +1135,8 @@ export function DashboardTab({
                                   <button
                                     type="button"
                                     onClick={() => handleEmpClick(item.emp.id)}
-                                    className="cursor-pointer font-semibold text-[#0f62fe] hover:underline"
+                                    style={{ color: getDeptColor(item.emp.dept) }}
+                                    className="cursor-pointer font-semibold hover:underline"
                                   >
                                     {item.emp.name}
                                   </button>
