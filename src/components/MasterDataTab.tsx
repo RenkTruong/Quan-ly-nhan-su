@@ -1,6 +1,6 @@
 import { FormEvent, useState } from 'react';
 import { User } from 'firebase/auth';
-import { Download, ExternalLink, FilePlus2, FileText, Link2, LogOut, RefreshCw, SlidersHorizontal, UploadCloud } from 'lucide-react';
+import { ExternalLink, FilePlus2, FileText, Link2, LogOut, RefreshCw, SlidersHorizontal, UploadCloud } from 'lucide-react';
 import { DEPT_CATALOG, getDeptColor } from '../data/seedData';
 import { DepartmentId, Employee, EmployeeStatus, ScheduleRecord, ShiftDef, ShiftGroup } from '../types/warehouse';
 import {
@@ -480,14 +480,6 @@ export function MasterDataTab({
               Xuất Báo cáo CSV
             </button>
 
-            <a
-              href="/kho-ob-github.zip"
-              download="kho-ob-github.zip"
-              className="inline-flex h-10 w-full items-center justify-center gap-2 border border-[#cbd5e1] bg-[#f8fafc] px-4 text-sm font-medium whitespace-nowrap text-[#0f172a] hover:bg-[#e2e8f0] sm:w-auto"
-            >
-              <Download className="h-4 w-4" aria-hidden="true" />
-              Tải Source ZIP (GitHub)
-            </a>
           </div>
         </div>
 

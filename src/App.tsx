@@ -365,7 +365,13 @@ export default function App() {
       setHasGoogleToken(Boolean(accessToken));
       showToast(`Đã kết nối Google Sheets với tài khoản ${user.email || user.displayName || 'Google'}.`, 'positive');
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Đăng nhập Google không thành công.';
+      const errorCode = typeof err === 'object' && err !== null && 'code' in err ? err.code : undefined;
+      const msg =
+        errorCode === 'auth/unauthorized-domain'
+          ? `Tên miền ${window.location.hostname} chưa được cho phép trong Firebase Authentication. Hãy thêm tên miền này tại Firebase Console > Authentication > Settings > Authorized domains, rồi thử lại.`
+          : err instanceof Error
+            ? err.message
+            : 'Đăng nhập Google không thành công.';
       showToast(msg, 'error');
     } finally {
       setIsLoggingInGoogle(false);

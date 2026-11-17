@@ -32,6 +32,10 @@ npm run build
 
 Workflow `.github/workflows/deploy.yml` tự build và deploy khi có commit lên nhánh `main` hoặc được chạy thủ công trong tab Actions. Trong **Settings → Pages**, đặt **Build and deployment → Source** thành **GitHub Actions**. Vite sẽ tự dùng đường dẫn `/Quan-ly-nhan-su/` khi build trên GitHub Actions.
 
+## Cấu hình đăng nhập Google
+
+Trong Firebase Console, mở **Authentication → Settings → Authorized domains** và thêm `renktruong.github.io`. Đồng thời xác nhận Google đã được bật trong **Authentication → Sign-in method**. Nếu thiếu domain, đăng nhập từ GitHub Pages sẽ báo `auth/unauthorized-domain`. Khi chạy local, thêm `localhost` nếu chưa có.
+
 ## Hướng dẫn Push lên GitHub
 
 ```bash
