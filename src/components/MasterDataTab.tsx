@@ -750,7 +750,8 @@ export function MasterDataTab({
                       <button
                         type="button"
                         onClick={() => onSelectEmployee(emp.id)}
-                        className="cursor-pointer font-semibold text-[#0f62fe] hover:underline"
+                        style={{ color: getDeptColor(emp.dept) }}
+                        className="cursor-pointer font-semibold hover:underline"
                       >
                         {emp.name}
                       </button>

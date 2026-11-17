@@ -235,7 +235,8 @@ export function ScheduleEditorTab({
                     <button
                       type="button"
                       onClick={() => onSelectEmployee(emp.id)}
-                      className="cursor-pointer text-left text-sm font-semibold text-[#0f62fe] hover:underline"
+                      style={{ color: getDeptColor(emp.dept) }}
+                      className="cursor-pointer text-left text-sm font-semibold hover:underline"
                     >
                       {emp.name}
                     </button>
@@ -364,7 +365,8 @@ export function ScheduleEditorTab({
                       <button
                         type="button"
                         onClick={() => onSelectEmployee(emp.id)}
-                        className="cursor-pointer font-semibold text-[#0f62fe] hover:underline"
+                        style={{ color: getDeptColor(emp.dept) }}
+                        className="cursor-pointer font-semibold hover:underline"
                       >
                         {emp.name}
                       </button>
