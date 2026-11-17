@@ -17,6 +17,15 @@ import {
 } from '../utils/analytics';
 import { ChartCanvas } from './ChartCanvas';
 
+const DEPT_SHIFT_COLORS: Record<DepartmentId, { day: string; night: string }> = {
+  Pick: { day: '#0f62fe', night: '#a6c8ff' },
+  Check: { day: '#6929c4', night: '#d4bbff' },
+  Pack: { day: '#005d5d', night: '#9ef0f0' },
+  Dispatch: { day: '#9f1853', night: '#ffb3d2' },
+  TBS: { day: '#198038', night: '#a7f0ba' },
+  NVL: { day: '#c2410c', night: '#ffb38a' },
+};
+
 interface DashboardTabProps {
   analytics: RangeAnalytics;
   employees: Employee[];
@@ -132,13 +141,15 @@ export function DashboardTab({
     const labels = DEPT_CATALOG.map((d) => d.name);
     const dayVals = DEPT_CATALOG.map((d) => analytics.deptStats[d.id].convDay);
     const nightVals = DEPT_CATALOG.map((d) => analytics.deptStats[d.id].convNight);
+    const dayColors = DEPT_CATALOG.map((d) => DEPT_SHIFT_COLORS[d.id].day);
+    const nightColors = DEPT_CATALOG.map((d) => DEPT_SHIFT_COLORS[d.id].night);
     return {
       type: 'bar',
       data: {
         labels,
         datasets: [
-          { label: 'Day Shift', data: dayVals, backgroundColor: '#0284c7', borderRadius: 0 },
-          { label: 'Night Shift', data: nightVals, backgroundColor: '#1e293b', borderRadius: 0 },
+          { label: 'Day Shift', data: dayVals, backgroundColor: dayColors, borderRadius: 0 },
+          { label: 'Night Shift', data: nightVals, backgroundColor: nightColors, borderRadius: 0 },
         ],
       },
       options: {
@@ -377,6 +388,7 @@ export function DashboardTab({
     const map = {} as Record<DepartmentId, ChartConfiguration<'doughnut'>>;
     DEPT_CATALOG.forEach((dept) => {
       const st = analytics.deptStats[dept.id];
+      const shiftColors = DEPT_SHIFT_COLORS[dept.id];
       map[dept.id] = {
         type: 'doughnut',
         data: {
@@ -384,7 +396,7 @@ export function DashboardTab({
           datasets: [
             {
               data: [st.convDay, st.convNight],
-              backgroundColor: [dept.color, '#1e293b'],
+              backgroundColor: [shiftColors.day, shiftColors.night],
               borderWidth: 2,
               borderColor: '#ffffff',
             },
@@ -589,7 +601,7 @@ export function DashboardTab({
         <div className="flex min-w-0 flex-col gap-3 border border-[#e2e8f0] bg-white p-4 sm:p-5 lg:col-span-7">
           <div>
             <h3 className="text-base font-semibold text-[#0f172a]">Quân số theo Task</h3>
-            <p className="font-mono-num text-xs text-[#64748b]">Day Shift vs Night Shift</p>
+            <p className="font-mono-num text-xs text-[#64748b]">Cùng màu theo Task · Day đậm, Night nhạt</p>
           </div>
           <ChartCanvas
             config={deptHeadcountConfig}
@@ -702,6 +714,7 @@ export function DashboardTab({
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {DEPT_CATALOG.map((dept) => {
             const st = analytics.deptStats[dept.id];
+            const shiftColors = DEPT_SHIFT_COLORS[dept.id];
             const total = st.convDay + st.convNight;
             const dayPct = total ? Math.round((st.convDay / total) * 100) : 0;
             const nightPct = total ? 100 - dayPct : 0;
@@ -763,8 +776,8 @@ export function DashboardTab({
 
                 <div className="w-full">
                   <div className="flex h-1.5 w-full overflow-hidden bg-[#e2e8f0]">
-                    <div style={{ width: `${dayPct}%`, backgroundColor: dept.color }} />
-                    <div style={{ width: `${nightPct}%`, backgroundColor: '#1e293b' }} />
+                    <div style={{ width: `${dayPct}%`, backgroundColor: shiftColors.day }} />
+                    <div style={{ width: `${nightPct}%`, backgroundColor: shiftColors.night }} />
                   </div>
                 </div>
               </button>
