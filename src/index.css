@@ -1,0 +1,68 @@
+@import "tailwindcss";
+
+:root {
+  color-scheme: light;
+  --ob-bg: #ffffff;
+  --ob-surface: #f4f4f4;
+  --ob-surface-low: #f8f8f8;
+  --ob-surface-high: #e0e0e0;
+  --ob-ink: #161616;
+  --ob-ink-muted: #525252;
+  --ob-rule: #e0e0e0;
+  --ob-field-rule: #8d8d8d;
+  --ob-primary: #0f62fe;
+  --ob-primary-hover: #0353e9;
+  --ob-primary-soft: #d0e2ff;
+  --ob-night-bg: #262626;
+  --ob-night-ink: #f4f4f4;
+  --ob-mid-soft: #f6f2ff;
+  --ob-mid-ink: #6929c4;
+  --ob-positive: #198038;
+  --ob-positive-soft: #defbe6;
+  --ob-warning: #8a6100;
+  --ob-warning-soft: #fcf4d6;
+  --ob-error: #da1e28;
+  --ob-error-soft: #fff1f1;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  background-color: #f8fafc;
+  color: var(--ob-ink);
+  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  line-height: 1.5;
+  overflow-x: clip;
+  -webkit-font-smoothing: antialiased;
+}
+
+.font-mono-num {
+  font-family: 'IBM Plex Mono', ui-monospace, SFMono-Regular, monospace;
+  font-variant-numeric: tabular-nums;
+}
+
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+:focus-visible {
+  outline: 2px solid var(--ob-primary);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

@@ -1,0 +1,3861 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="artifact-type" content="dashboard">
+  <meta name="design-style" content="carbon">
+  <title>Quản lý Phân ca &amp; Báo cáo Vận hành Kho Outbound (OB)</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.1/dist/chart.umd.min.js"></script>
+  <script src="https://unpkg.com/lucide@1.43.0/dist/umd/lucide.min.js"></script>
+
+  <style>
+    :root {
+      color-scheme: light;
+
+      /* Page and surfaces (Carbon) */
+      --background: #ffffff;
+      --surface-container-low: #f4f4f4;
+      --surface-container: #f4f4f4;
+      --surface-container-high: #e0e0e0;
+
+      /* Ink */
+      --on-surface: #161616;
+      --on-surface-variant: #525252;
+
+      /* Rules */
+      --outline: #8d8d8d;
+      --outline-variant: #e0e0e0;
+
+      /* Accents */
+      --primary: #0f62fe;
+      --primary-hover: #0353e9;
+      --on-primary: #ffffff;
+      --primary-container: #d0e2ff;
+      --on-primary-container: #161616;
+      --secondary: #6f6f6f;
+      --tertiary: #198038;
+      --error: #da1e28;
+      --on-error: #ffffff;
+
+      /* Shared semantic tokens */
+      --positive: #198038;
+      --positive-container: #defbe6;
+      --warning: #8a6100;
+      --warning-container: #fcf4d6;
+      --error-container: #fff1f1;
+      --focus: #0f62fe;
+
+      /* Data series */
+      --data-1: #0f62fe;
+      --data-2: #6929c4;
+      --data-3: #005d5d;
+      --data-4: #9f1853;
+      --data-5: #198038;
+      --data-6: #8a3ffc;
+      --data-context: #8d8d8d;
+      --mid-container: #f6f2ff;
+      --night-surface: #262626;
+      --night-ink: #f4f4f4;
+
+      /* Fonts */
+      --font-headline: 'IBM Plex Sans', sans-serif;
+      --font-body: 'IBM Plex Sans', sans-serif;
+      --font-label: 'IBM Plex Mono', monospace;
+
+      /* Type scale (Dashboard) */
+      --display-size: clamp(1.75rem, 1.4rem + 1.1vw, 2.25rem);
+      --headline-size: clamp(1.25rem, 1.1rem + 0.5vw, 1.5rem);
+      --subhead-size: clamp(1.0625rem, 1rem + 0.25vw, 1.1875rem);
+      --body-size: clamp(0.9375rem, 0.9rem + 0.15vw, 1rem);
+      --label-size: 0.75rem;
+
+      /* Shape */
+      --rounded: 0.125rem;
+      --rounded-lg: 0.25rem;
+      --rounded-full: 0.75rem;
+
+      /* Style effects */
+      --shadow-1: 0 2px 6px rgb(0 0 0 / 0.1);
+      --shadow-2: 0 4px 12px rgb(0 0 0 / 0.12);
+      --rule: 1px solid var(--outline-variant);
+      --field-rule: 1px solid var(--outline);
+      --indicator: 2px solid var(--primary);
+
+      /* Spacing scale (4pt base) */
+      --space-xs: 0.25rem;
+      --space-sm: 0.5rem;
+      --space-md: 1rem;
+      --space-lg: 1.5rem;
+      --space-xl: 2.5rem;
+      --space-2xl: 4rem;
+
+      /* Motion */
+      --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+      --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+      --dur-micro: 120ms;
+      --dur-short: 220ms;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+    html, body {
+      overflow-x: clip;
+      margin: 0;
+      padding: 0;
+      background: var(--background);
+      color: var(--on-surface);
+      font-family: var(--font-body);
+      font-size: var(--body-size);
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    header { position: static !important; }
+
+    button, input, select, textarea {
+      font-family: inherit;
+      font-size: inherit;
+      color: inherit;
+    }
+
+    :focus-visible {
+      outline: 2px solid var(--focus);
+      outline-offset: 2px;
+    }
+
+    .page-grid {
+      display: grid;
+      gap: var(--space-lg);
+      padding: var(--space-lg);
+      max-width: 1440px;
+      margin: 0 auto;
+    }
+    .page-grid * { min-width: 0; }
+
+    /* Typography */
+    .headline {
+      font-family: var(--font-headline);
+      font-weight: 300;
+      font-size: var(--display-size);
+      line-height: 1.18;
+      margin: 0;
+      letter-spacing: 0;
+    }
+    .headline strong { font-weight: 600; }
+
+    .section-title {
+      font-family: var(--font-headline);
+      font-weight: 600;
+      font-size: var(--headline-size);
+      line-height: 1.25;
+      margin: 0;
+    }
+
+    .subhead {
+      font-family: var(--font-headline);
+      font-weight: 600;
+      font-size: var(--subhead-size);
+      line-height: 1.3;
+      margin: 0;
+    }
+
+    .label-mono {
+      font-family: var(--font-label);
+      font-size: var(--label-size);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--on-surface-variant);
+      font-weight: 500;
+    }
+
+    .mono-num {
+      font-family: var(--font-label);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .helper-text {
+      font-size: 0.8125rem;
+      color: var(--on-surface-variant);
+      margin: 0;
+    }
+
+    /* Header & Global Controls */
+    .masthead {
+      display: grid;
+      grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr);
+      gap: var(--space-lg);
+      padding-bottom: var(--space-lg);
+      border-bottom: var(--rule);
+      align-items: end;
+    }
+
+    .masthead-sub {
+      margin: var(--space-xs) 0 0 0;
+      color: var(--on-surface-variant);
+      max-width: 65ch;
+      font-size: 0.9375rem;
+    }
+
+    .controls-cluster {
+      background: var(--surface-container);
+      padding: var(--space-md);
+      display: grid;
+      gap: var(--space-sm);
+    }
+
+    .controls-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(min(150px, 100%), 1fr));
+      gap: var(--space-sm);
+      align-items: end;
+    }
+
+    /* Inputs & Buttons (Carbon) */
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-xs);
+    }
+
+    .field label {
+      font-size: var(--label-size);
+      color: var(--on-surface-variant);
+      font-weight: 500;
+    }
+
+    .input-ctrl, .select-ctrl {
+      height: 40px;
+      background: var(--background);
+      border: 0;
+      border-bottom: var(--field-rule);
+      border-radius: 0;
+      padding: 0 var(--space-sm);
+      font-size: 0.875rem;
+      width: 100%;
+      transition: background-color var(--dur-micro) var(--ease-out);
+    }
+
+    .layer .input-ctrl, .layer .select-ctrl {
+      background: var(--background);
+    }
+
+    .select-ctrl {
+      padding-right: var(--space-lg);
+    }
+
+    .input-ctrl:hover, .select-ctrl:hover {
+      background: var(--surface-container-low);
+    }
+
+    .input-ctrl:disabled, .select-ctrl:disabled {
+      background: var(--surface-container-high);
+      color: var(--on-surface-variant);
+      cursor: not-allowed;
+      opacity: 0.8;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: flex-start;
+      gap: var(--space-sm);
+      height: 40px;
+      padding: 0 var(--space-lg) 0 var(--space-md);
+      border-radius: 0;
+      border: 1px solid transparent;
+      font-size: 0.875rem;
+      font-weight: 400;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: background-color var(--dur-micro) var(--ease-out), color var(--dur-micro) var(--ease-out);
+    }
+
+    .btn-sm {
+      height: 32px;
+      padding: 0 var(--space-md) 0 var(--space-sm);
+      font-size: 0.8125rem;
+    }
+
+    .btn-primary {
+      background: var(--primary);
+      color: var(--on-primary);
+    }
+    .btn-primary:hover { background: var(--primary-hover); }
+
+    .btn-secondary {
+      background: transparent;
+      border-color: var(--primary);
+      color: var(--primary);
+    }
+    .btn-secondary:hover { background: var(--primary-container); color: var(--on-primary-container); }
+
+    .btn-ghost {
+      background: transparent;
+      color: var(--primary);
+      padding: 0 var(--space-sm);
+    }
+    .btn-ghost:hover { background: var(--surface-container); }
+
+    .btn-danger {
+      background: var(--error);
+      color: var(--on-error);
+    }
+    .btn-danger:hover {
+      background: var(--on-surface);
+    }
+
+    .btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    /* Flat Gray Layers (Carbon Treatment #1) */
+    .layer {
+      background: var(--surface-container);
+      border-radius: 0;
+      padding: var(--space-md);
+    }
+    .layer .layer {
+      background: var(--surface-container-high);
+    }
+
+    /* KPI Strip */
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: var(--space-sm);
+    }
+
+    .kpi-tile {
+      background: var(--surface-container);
+      padding: var(--space-md);
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-xs);
+    }
+    .kpi-tile.key-tile {
+      border-bottom: var(--indicator);
+    }
+    .kpi-value {
+      font-family: var(--font-label);
+      font-weight: 300;
+      font-size: 1.875rem;
+      line-height: 1.15;
+      color: var(--on-surface);
+    }
+    .kpi-sub {
+      font-size: 0.75rem;
+      color: var(--on-surface-variant);
+    }
+
+    /* Carbon Tabs */
+    .tabs-bar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0;
+      border-bottom: var(--rule);
+    }
+
+    .tab-btn {
+      background: transparent;
+      border: 0;
+      border-bottom: 2px solid transparent;
+      padding: var(--space-sm) var(--space-lg);
+      font-size: 0.9375rem;
+      font-weight: 400;
+      color: var(--on-surface-variant);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-sm);
+      min-height: 44px;
+      transition: color var(--dur-micro) var(--ease-out), background-color var(--dur-micro) var(--ease-out);
+    }
+    .tab-btn:hover {
+      background: var(--surface-container);
+      color: var(--on-surface);
+    }
+    .tab-btn.is-active {
+      border-bottom: var(--indicator);
+      font-weight: 600;
+      color: var(--on-surface);
+    }
+
+    .tab-panel { display: none; }
+    .tab-panel.is-active { display: grid; gap: var(--space-lg); }
+
+    /* Section Headers (Treatment #5) */
+    .section-head {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: flex-end;
+      gap: var(--space-md);
+      border-bottom: var(--rule);
+      padding-bottom: var(--space-sm);
+    }
+
+    /* Notifications / Callout strips */
+    .notice-strip {
+      background: var(--surface-container);
+      border-left: 3px solid var(--primary);
+      padding: var(--space-sm) var(--space-md);
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--space-sm);
+      font-size: 0.875rem;
+    }
+    .notice-strip.is-positive { border-left-color: var(--positive); background: var(--positive-container); }
+    .notice-strip.is-warning { border-left-color: var(--warning); background: var(--warning-container); }
+    .notice-strip.is-error { border-left-color: var(--error); background: var(--error-container); }
+
+    /* Tags & Badges */
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      height: 24px;
+      padding: 0 var(--space-sm);
+      border-radius: var(--rounded-full);
+      font-size: 0.75rem;
+      font-weight: 500;
+      background: var(--primary-container);
+      color: var(--on-primary-container);
+      white-space: nowrap;
+    }
+    .tag.tag-day { background: var(--primary-container); color: var(--on-primary-container); }
+    .tag.tag-night { background: var(--night-surface); color: var(--night-ink); }
+    .tag.tag-mid { background: var(--mid-container); color: var(--data-2); }
+    .tag.tag-off { background: var(--surface-container-high); color: var(--on-surface-variant); }
+    .tag.tag-ok { background: var(--positive-container); color: var(--positive); }
+    .tag.tag-lock { background: var(--error-container); color: var(--error); }
+    .tag.tag-warn { background: var(--warning-container); color: var(--warning); }
+
+    /* Tables (Carbon) */
+    .table-wrap {
+      width: 100%;
+      overflow-x: auto;
+      border-bottom: var(--rule);
+    }
+
+    table.data-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.875rem;
+      text-align: left;
+    }
+
+    table.data-table thead th {
+      background: var(--surface-container-high);
+      font-family: var(--font-label);
+      font-size: 0.72rem;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--on-surface);
+      padding: var(--space-sm) var(--space-sm);
+      white-space: nowrap;
+      border-bottom: var(--rule);
+    }
+
+    table.data-table tbody td {
+      padding: var(--space-sm) var(--space-sm);
+      border-top: var(--rule);
+      vertical-align: middle;
+    }
+
+    table.data-table tbody tr:nth-child(even) {
+      background: var(--surface-container-low);
+    }
+
+    table.data-table tbody tr:hover {
+      background: var(--primary-container);
+    }
+
+    table.data-table tbody tr.is-selected {
+      background: var(--primary-container);
+    }
+
+    .num-col {
+      text-align: right !important;
+      font-family: var(--font-label);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .link-btn {
+      background: transparent;
+      border: 0;
+      padding: 0;
+      color: var(--primary);
+      cursor: pointer;
+      font-weight: 600;
+      text-align: left;
+      text-decoration: none;
+    }
+    .link-btn:hover { text-decoration: underline; }
+
+    /* Dashboard Layouts */
+    .dash-two-col {
+      display: grid;
+      grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
+      gap: var(--space-lg);
+    }
+
+    .dash-three-col {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: var(--space-md);
+    }
+
+    .chart-card {
+      background: var(--surface-container);
+      padding: var(--space-md);
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-sm);
+    }
+
+    .chart-box {
+      position: relative;
+      min-height: 260px;
+      height: 260px;
+      width: 100%;
+    }
+
+    .chart-box-sm {
+      position: relative;
+      min-height: 185px;
+      height: 185px;
+      width: 100%;
+    }
+
+    .mini-pies-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr));
+      gap: var(--space-md);
+    }
+
+    .mini-pie-card {
+      background: var(--surface-container);
+      padding: var(--space-md);
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-xs);
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      transition: background-color var(--dur-micro) var(--ease-out);
+    }
+    .mini-pie-card:hover {
+      background: var(--surface-container-high);
+    }
+    .mini-pie-card.is-selected {
+      border-bottom: var(--indicator);
+    }
+
+    /* Drill-down Panel */
+    .drilldown-shell {
+      border-top: 2px solid var(--primary);
+      background: var(--surface-container);
+      padding: var(--space-lg);
+      display: grid;
+      gap: var(--space-md);
+    }
+
+    .drilldown-kpis {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(min(170px, 100%), 1fr));
+      gap: var(--space-sm);
+    }
+
+    .drilldown-tile {
+      background: var(--background);
+      padding: var(--space-sm) var(--space-md);
+      border-left: 2px solid var(--primary);
+    }
+
+    /* Matrix Schedule Tables (Screenshot optimized) */
+    .matrix-task-block {
+      display: grid;
+      gap: var(--space-md);
+      padding-bottom: var(--space-lg);
+      border-bottom: 2px solid var(--outline-variant);
+    }
+
+    .matrix-shift-card {
+      background: var(--background);
+      border: var(--rule);
+    }
+
+    .matrix-shift-head {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: var(--space-sm);
+      padding: var(--space-sm) var(--space-md);
+    }
+    .matrix-shift-head.is-day {
+      background: var(--primary-container);
+      color: var(--on-primary-container);
+      border-bottom: 2px solid var(--primary);
+    }
+    .matrix-shift-head.is-night {
+      background: var(--night-surface);
+      color: var(--night-ink);
+      border-bottom: 2px solid var(--data-2);
+    }
+
+    table.matrix-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.78rem;
+    }
+
+    table.matrix-table th, table.matrix-table td {
+      border: 1px solid var(--outline-variant);
+      padding: 4px 5px;
+      text-align: center;
+      white-space: nowrap;
+    }
+
+    table.matrix-table th.col-sticky,
+    table.matrix-table td.col-sticky {
+      text-align: left;
+      padding: 5px 8px;
+      background: var(--background);
+    }
+
+    table.matrix-table thead th {
+      background: var(--surface-container);
+      font-family: var(--font-label);
+      font-size: 0.7rem;
+      font-weight: 600;
+    }
+
+    table.matrix-table thead th.is-weekend {
+      background: var(--surface-container-high);
+    }
+
+    .cell-code {
+      display: inline-flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-width: 30px;
+      padding: 2px 4px;
+      font-family: var(--font-label);
+      font-size: 0.7rem;
+      font-weight: 600;
+      line-height: 1.15;
+    }
+    .cell-day { background: var(--primary-container); color: var(--on-primary-container); }
+    .cell-night { background: var(--night-surface); color: var(--night-ink); }
+    .cell-mid { background: var(--mid-container); color: var(--data-2); }
+    .cell-off { color: var(--on-surface-variant); font-weight: 400; }
+    .cell-ot { font-size: 0.62rem; color: var(--error); font-weight: 600; }
+
+    /* Screenshot mode hides peripheral controls inside Tab 3 */
+    .is-screenshot-mode .hide-in-shot { display: none !important; }
+    .is-screenshot-mode .matrix-shift-card { box-shadow: none; }
+
+    /* Two-column Management Grid */
+    .mgmt-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      gap: var(--space-lg);
+      align-items: start;
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(min(170px, 100%), 1fr));
+      gap: var(--space-sm);
+      align-items: end;
+    }
+
+    .ot-input {
+      width: 72px;
+      height: 32px;
+      text-align: right;
+      font-family: var(--font-label);
+      background: var(--background);
+      border: 0;
+      border-bottom: var(--field-rule);
+      padding: 0 var(--space-xs);
+    }
+    .ot-input:disabled {
+      background: var(--surface-container-high);
+      color: var(--on-surface-variant);
+    }
+
+    .shift-select-inline {
+      height: 32px;
+      min-width: 165px;
+      background: var(--background);
+      border: 0;
+      border-bottom: var(--field-rule);
+      padding: 0 var(--space-sm) 0 var(--space-xs);
+      font-size: 0.8125rem;
+    }
+    .shift-select-inline:disabled {
+      background: var(--surface-container-high);
+      color: var(--on-surface-variant);
+    }
+
+    .lock-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 0.72rem;
+      font-family: var(--font-label);
+      color: var(--error);
+    }
+    .open-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 0.72rem;
+      font-family: var(--font-label);
+      color: var(--positive);
+    }
+
+    /* Preset Clock Pills */
+    .clock-presets {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--space-xs);
+      align-items: center;
+    }
+
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+    }
+
+    @media (max-width: 1024px) {
+      .masthead { grid-template-columns: 1fr; }
+      .kpi-grid { grid-template-columns: repeat(auto-fit, minmax(min(180px, 100%), 1fr)); }
+      .dash-two-col { grid-template-columns: 1fr; }
+      .dash-three-col { grid-template-columns: 1fr; }
+      .mgmt-grid { grid-template-columns: 1fr; }
+    }
+
+    @media (max-width: 640px) {
+      .page-grid { padding: var(--space-sm); gap: var(--space-md); }
+      .tab-btn { padding: var(--space-sm) var(--space-md); font-size: 0.8125rem; }
+      .btn { width: 100%; justify-content: center; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="page-grid">
+    <!-- MASTHEAD -->
+    <header class="masthead">
+      <div>
+        <div class="label-mono">HỆ THỐNG ĐIỀU HÀNH LOGISTICS OUTBOUND (OB)</div>
+        <h1 class="headline">Quản lý Phân ca &amp; <strong>Báo cáo Vận hành Kho OB</strong></h1>
+        <p class="masthead-sub">
+          Điều phối 6 Task vụ chuẩn SOP (Pick, Check, Pack, Dispatch, TBS, NVL), quy đổi Ca giữa tự động
+          (<span class="mono-num">⌈M/2⌉</span> Day / <span class="mono-num">⌊M/2⌋</span> Night), khóa lịch
+          <span class="mono-num">D-1 15:00</span>, chốt OT <span class="mono-num">D+2 23:59</span> và đồng bộ Excel VLOOKUP.
+        </p>
+      </div>
+
+      <div class="controls-cluster" aria-label="Bộ lọc khoảng ngày và đồng hồ kiểm tra khóa">
+        <div class="controls-row">
+          <div class="field">
+            <label for="range-start">Từ ngày (Báo cáo)</label>
+            <input type="date" id="range-start" class="input-ctrl" value="2026-11-01" onchange="onDateRangeChange()">
+          </div>
+          <div class="field">
+            <label for="range-end">Đến ngày (Báo cáo)</label>
+            <input type="date" id="range-end" class="input-ctrl" value="2026-11-21" onchange="onDateRangeChange()">
+          </div>
+          <div class="field">
+            <label for="sim-clock">Thời điểm kiểm tra khóa</label>
+            <input type="datetime-local" id="sim-clock" class="input-ctrl" value="2026-11-17T14:30" onchange="onSimClockChange()">
+          </div>
+        </div>
+        <div class="clock-presets">
+          <span class="label-mono">Mô phỏng nhanh:</span>
+          <button type="button" class="btn btn-ghost btn-sm" onclick="setClockPreset('2026-11-17T14:30')">17/11 14:30 (Trước 15h)</button>
+          <button type="button" class="btn btn-ghost btn-sm" onclick="setClockPreset('2026-11-17T15:15')">17/11 15:15 (Sau 15h)</button>
+          <button type="button" class="btn btn-ghost btn-sm" onclick="setClockPreset('now')">Giờ hiện tại thực tế</button>
+        </div>
+      </div>
+    </header>
+
+    <!-- GLOBAL TOAST / STATUS MESSAGE -->
+    <div id="global-status" class="notice-strip" role="status" aria-live="polite">
+      <span id="global-status-text">Sẵn sàng — Dữ liệu vận hành kho OB tháng 11/2026 đã được tải.</span>
+      <span id="clock-summary-badge" class="tag">Đồng hồ: 17/11/2026 14:30</span>
+    </div>
+
+    <!-- HEADLINE KPI STRIP -->
+    <section class="kpi-grid" aria-label="Chỉ số tổng quan kho Outbound">
+      <div class="kpi-tile key-tile">
+        <span class="label-mono">Tổng giờ vận hành</span>
+        <span id="kpi-total-hours" class="kpi-value">0h</span>
+        <span id="kpi-hours-formula" class="kpi-sub">(Ca 8h × 8) + 0h OT</span>
+      </div>
+      <div class="kpi-tile">
+        <span class="label-mono">Tổng lượt ca (Headcount)</span>
+        <span id="kpi-total-shifts" class="kpi-value">0</span>
+        <span id="kpi-shifts-sub" class="kpi-sub">Trong khoảng ngày đã chọn</span>
+      </div>
+      <div class="kpi-tile">
+        <span class="label-mono">Day / Night (Đã quy đổi)</span>
+        <span id="kpi-day-night" class="kpi-value">0 / 0</span>
+        <span id="kpi-mid-note" class="kpi-sub">Ca giữa quy đổi: +0 Day / +0 Night</span>
+      </div>
+      <div class="kpi-tile">
+        <span class="label-mono">Tổng giờ tăng ca (OT)</span>
+        <span id="kpi-total-ot" class="kpi-value">0h</span>
+        <span id="kpi-ot-share" class="kpi-sub">Chiếm 0% tổng giờ vận hành</span>
+      </div>
+      <div class="kpi-tile">
+        <span class="label-mono">Nhân sự Active / 6 Task</span>
+        <span id="kpi-headcount" class="kpi-value">0</span>
+        <span id="kpi-avg-daily" class="kpi-sub">Trung bình 0 người/ngày</span>
+      </div>
+    </section>
+
+    <!-- NAVIGATION TABS -->
+    <nav class="tabs-bar" aria-label="Phân hệ quản lý kho OB">
+      <button type="button" id="tab-btn-dashboard" class="tab-btn is-active" onclick="switchTab('dashboard')">
+        <i data-lucide="bar-chart-3" style="width:16px;height:16px;" aria-hidden="true"></i>
+        Báo cáo &amp; Drill-down
+      </button>
+      <button type="button" id="tab-btn-schedule" class="tab-btn" onclick="switchTab('schedule')">
+        <i data-lucide="calendar-clock" style="width:16px;height:16px;" aria-hidden="true"></i>
+        Phân ca &amp; Chấm OT (Khóa thời gian)
+      </button>
+      <button type="button" id="tab-btn-matrix" class="tab-btn" onclick="switchTab('matrix')">
+        <i data-lucide="table-2" style="width:16px;height:16px;" aria-hidden="true"></i>
+        Bảng Lịch Tháng (Chụp cho NV)
+      </button>
+      <button type="button" id="tab-btn-master" class="tab-btn" onclick="switchTab('master')">
+        <i data-lucide="file-spreadsheet" style="width:16px;height:16px;" aria-hidden="true"></i>
+        Nhân sự, Ca làm việc &amp; Excel
+      </button>
+    </nav>
+
+    <!-- ========================================================= -->
+    <!-- TAB 1: DASHBOARD & DRILL-DOWN                             -->
+    <!-- ========================================================= -->
+    <section id="tab-panel-dashboard" class="tab-panel is-active">
+      <div class="section-head">
+        <div>
+          <h2 class="section-title">Báo cáo Tổng quan &amp; Quy đổi Ca giữa Kho OB</h2>
+          <p class="helper-text">
+            Click vào tên <strong>Task vụ</strong> hoặc cột biểu đồ để xem chi tiết ca &amp; giờ vận hành theo Task. Click vào <strong>Tên nhân viên</strong> để xem lịch cá nhân tích lũy.
+          </p>
+        </div>
+        <div class="field" style="min-width:240px;">
+          <label for="quick-emp-search">Tra cứu nhanh Nhân viên (Drill-down)</label>
+          <select id="quick-emp-search" class="select-ctrl" onchange="onQuickEmployeeSelect(this.value)">
+            <option value="">— Chọn nhân viên để xem báo cáo —</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- TASK SUMMARY TABLE + OVERALL DAY/NIGHT PIE -->
+      <div class="dash-two-col">
+        <div class="layer">
+          <div class="section-head" style="margin-bottom: var(--space-sm);">
+            <div>
+              <h3 class="subhead">Bảng Tổng hợp 6 Task vụ (Click Task để Drill-down)</h3>
+              <p class="helper-text">Số liệu quy đổi Ca giữa: <span class="mono-num">Day += ⌈Mid/2⌉</span>, <span class="mono-num">Night += ⌊Mid/2⌋</span> (tính trên từng ngày rồi cộng dồn).</p>
+            </div>
+          </div>
+          <div class="table-wrap">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Task vụ</th>
+                  <th class="num-col">Day gốc</th>
+                  <th class="num-col">Night gốc</th>
+                  <th class="num-col">Ca giữa</th>
+                  <th class="num-col">Day QĐ</th>
+                  <th class="num-col">Night QĐ</th>
+                  <th class="num-col">Tổng ca</th>
+                  <th class="num-col">Giờ OT</th>
+                  <th class="num-col">Tổng giờ VH</th>
+                </tr>
+              </thead>
+              <tbody id="task-summary-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="chart-card">
+          <div>
+            <h3 class="subhead">Tỷ trọng Tổng Day vs Night toàn kho OB</h3>
+            <p class="label-mono">SAU QUY ĐỔI CA GIỮA · LƯỢT CA (%)</p>
+          </div>
+          <div class="chart-box">
+            <canvas id="chart-ob-day-night"></canvas>
+          </div>
+          <div id="ob-day-night-caption" class="helper-text"></div>
+        </div>
+      </div>
+
+      <!-- CHARTS ROW 2: TASK BAR + TASK SHARE PIE -->
+      <div class="dash-two-col">
+        <div class="chart-card">
+          <div>
+            <h3 class="subhead">Tổng lượt nhân sự theo từng Task trong OB</h3>
+            <p class="label-mono">CỘT XẾP CHỒNG DAY QĐ VS NIGHT QĐ · CLICK CỘT ĐỂ DRILL-DOWN</p>
+          </div>
+          <div class="chart-box">
+            <canvas id="chart-task-headcount"></canvas>
+          </div>
+        </div>
+
+        <div class="chart-card">
+          <div>
+            <h3 class="subhead">Tỷ trọng nhân lực của mỗi Task trong OB</h3>
+            <p class="label-mono">TỔNG LƯỢT CA THEO TASK (%)</p>
+          </div>
+          <div class="chart-box">
+            <canvas id="chart-task-share"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- CHART ROW 3: DAILY OT & OPERATING HOURS -->
+      <div class="chart-card">
+        <div class="section-head">
+          <div>
+            <h3 class="subhead">Biểu đồ Giờ Tăng ca (OT) hàng ngày theo Task &amp; Tổng Giờ Vận hành</h3>
+            <p class="label-mono">CỘT CHỒNG OT THEO 6 TASK (GIỜ) + ĐƯỜNG TỔNG GIỜ VẬN HÀNH (CA 8H + OT)</p>
+          </div>
+          <div id="ot-chart-badge" class="tag">Tổng giờ VH: 0h</div>
+        </div>
+        <div class="chart-box" style="min-height: 290px; height: 290px;">
+          <canvas id="chart-daily-ot"></canvas>
+        </div>
+      </div>
+
+      <!-- 6 MINI PIE CHARTS: DAY VS NIGHT PER TASK -->
+      <div>
+        <div class="section-head" style="margin-bottom: var(--space-md);">
+          <div>
+            <h3 class="subhead">Tỷ lệ Ca Day – Night cho từng Task vụ (6 Task)</h3>
+            <p class="helper-text">Click trực tiếp vào thẻ Task bất kỳ bên dưới để mở báo cáo Drill-down chi tiết của Task đó.</p>
+          </div>
+        </div>
+        <div id="task-mini-pies-grid" class="mini-pies-grid"></div>
+      </div>
+
+      <!-- DRILL-DOWN INTERACTIVE PANEL -->
+      <div id="drilldown-container" class="drilldown-shell" aria-live="polite">
+        <div class="section-head">
+          <div>
+            <div id="drilldown-eyebrow" class="label-mono">DRILL-DOWN CHI TIẾT</div>
+            <h3 id="drilldown-title" class="section-title">Chọn một Task hoặc Tên nhân viên để xem chi tiết</h3>
+          </div>
+          <div style="display:flex; gap:var(--space-sm); flex-wrap:wrap;">
+            <button type="button" id="btn-drill-back-task" class="btn btn-secondary btn-sm" style="display:none;" onclick="backToTaskDrilldown()">
+              ← Quay lại Task đang xem
+            </button>
+          </div>
+        </div>
+        <div id="drilldown-kpis" class="drilldown-kpis"></div>
+        <div id="drilldown-body"></div>
+      </div>
+    </section>
+
+    <!-- ========================================================= -->
+    <!-- TAB 2: SHIFT SCHEDULING & OT ENTRY (TIME LOCK RULES)      -->
+    <!-- ========================================================= -->
+    <section id="tab-panel-schedule" class="tab-panel">
+      <div class="section-head">
+        <div>
+          <h2 class="section-title">Phân ca Làm việc &amp; Nhập giờ OT trực tiếp</h2>
+          <p class="helper-text">
+            Áp dụng chặt chẽ quy tắc khóa thời gian: <strong>Khóa Phân ca</strong> sau <span class="mono-num">15:00 ngày D-1</span> |
+            <strong>Khóa OT</strong> sau <span class="mono-num">23:59:59 ngày D+2</span>.
+          </p>
+        </div>
+        <div style="display:flex; gap:var(--space-sm); flex-wrap:wrap;">
+          <button type="button" class="btn btn-secondary btn-sm" onclick="copyPrevDayToSelected()">
+            <i data-lucide="copy" style="width:14px;height:14px;" aria-hidden="true"></i>
+            Sao chép ca từ ngày D-1
+          </button>
+        </div>
+      </div>
+
+      <!-- CONTROLS FOR DATE D & FILTER -->
+      <div class="layer">
+        <div class="controls-row">
+          <div class="field">
+            <label for="sched-date">Ngày làm việc (D)</label>
+            <input type="date" id="sched-date" class="input-ctrl" value="2026-11-18" onchange="renderScheduleEditor()">
+          </div>
+          <div class="field">
+            <label for="sched-task-filter">Lọc theo Task vụ</label>
+            <select id="sched-task-filter" class="select-ctrl" onchange="renderScheduleEditor()">
+              <option value="ALL">Tất cả 6 Task vụ</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="sched-search">Tìm Mã NV hoặc Tên NV</label>
+            <input type="text" id="sched-search" class="input-ctrl" placeholder="VD: OB-001 hoặc An" oninput="renderScheduleEditor()">
+          </div>
+        </div>
+
+        <div id="sched-lock-banner" class="notice-strip" style="margin-top: var(--space-md);"></div>
+      </div>
+
+      <!-- MID-SHIFT CONVERSION PREVIEW FOR DAY D -->
+      <div class="layer">
+        <div class="section-head" style="margin-bottom: var(--space-sm);">
+          <div>
+            <h3 class="subhead">Bảng Quy đổi Ca giữa ngày <span id="mid-preview-date-lbl" class="mono-num"></span></h3>
+            <p class="helper-text">Ví dụ: 7 người ca giữa → Day +4, Night +3; 8 người → Day +4, Night +4.</p>
+          </div>
+          <div id="mid-total-summary-tag" class="tag tag-mid"></div>
+        </div>
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Task</th>
+                <th class="num-col">Day gốc</th>
+                <th class="num-col">Night gốc</th>
+                <th class="num-col">Ca giữa (Mid)</th>
+                <th class="num-col">Quy đổi Day (+⌈M/2⌉)</th>
+                <th class="num-col">Quy đổi Night (+⌊M/2⌋)</th>
+                <th class="num-col">Tổng Day QĐ</th>
+                <th class="num-col">Tổng Night QĐ</th>
+                <th class="num-col">Tổng giờ OT</th>
+                <th class="num-col">Tổng giờ VH</th>
+              </tr>
+            </thead>
+            <tbody id="sched-day-conversion-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- EMPLOYEE SHIFT + OT INPUT TABLE -->
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Mã NV</th>
+              <th>Họ và Tên (Click Drill-down)</th>
+              <th>Task</th>
+              <th>Vị trí</th>
+              <th>Ca làm việc</th>
+              <th>Trạng thái Ca</th>
+              <th class="num-col">Giờ OT</th>
+              <th>Trạng thái OT</th>
+              <th class="num-col">Giờ VH</th>
+            </tr>
+          </thead>
+          <tbody id="sched-editor-tbody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ========================================================= -->
+    <!-- TAB 3: MONTHLY MATRIX SCHEDULE FOR SCREENSHOT             -->
+    <!-- ========================================================= -->
+    <section id="tab-panel-matrix" class="tab-panel">
+      <div class="section-head hide-in-shot">
+        <div>
+          <h2 class="section-title">Bảng Chia Lịch Tháng theo Task &amp; Shift (Tối ưu Chụp cho NV)</h2>
+          <p class="helper-text">
+            Phân tầng từng Task vụ, mỗi Task gồm <strong>2 Bảng riêng biệt</strong> (Ca Day &amp; Ca Night — đã bao gồm nhân sự Ca giữa quy đổi).
+          </p>
+        </div>
+        <div style="display:flex; gap:var(--space-sm); flex-wrap:wrap;">
+          <button type="button" id="btn-toggle-shot" class="btn btn-secondary btn-sm" onclick="toggleScreenshotMode()">
+            <i data-lucide="camera" style="width:14px;height:14px;" aria-hidden="true"></i>
+            Chế độ Chụp Màn Hình
+          </button>
+        </div>
+      </div>
+
+      <div id="shot-exit-bar" class="notice-strip is-positive" style="display:none;">
+        <span>Đang ở <strong>Chế độ Chụp Màn Hình</strong> — Giao diện đã được thu gọn để chụp ảnh sắc nét gửi cho nhân viên.</span>
+        <button type="button" class="btn btn-primary btn-sm" onclick="toggleScreenshotMode()">Thoát chế độ Chụp</button>
+      </div>
+
+      <div class="layer hide-in-shot">
+        <div class="controls-row">
+          <div class="field">
+            <label for="matrix-month">Tháng hiển thị</label>
+            <input type="month" id="matrix-month" class="input-ctrl" value="2026-11" onchange="renderMonthlyMatrix()">
+          </div>
+          <div class="field">
+            <label for="matrix-day-from">Từ ngày</label>
+            <input type="number" id="matrix-day-from" class="input-ctrl" min="1" max="31" value="1" onchange="renderMonthlyMatrix()">
+          </div>
+          <div class="field">
+            <label for="matrix-day-to">Đến ngày</label>
+            <input type="number" id="matrix-day-to" class="input-ctrl" min="1" max="31" value="21" onchange="renderMonthlyMatrix()">
+          </div>
+          <div class="field">
+            <label for="matrix-task-filter">Task vụ hiển thị</label>
+            <select id="matrix-task-filter" class="select-ctrl" onchange="renderMonthlyMatrix()">
+              <option value="ALL">Tất cả 6 Task vụ</option>
+            </select>
+          </div>
+        </div>
+        <div style="display:flex; flex-wrap:wrap; gap:var(--space-sm); margin-top:var(--space-sm); align-items:center;">
+          <span class="label-mono">Chú giải ô lịch:</span>
+          <span class="tag tag-day">D = Ca Day</span>
+          <span class="tag tag-night">N = Ca Night</span>
+          <span class="tag tag-mid">M10 / M11 / M12 = Ca giữa (quy đổi vào bảng Day/Night)</span>
+          <span class="tag tag-off">OFF = Nghỉ</span>
+          <span class="tag tag-lock">+OT = Giờ tăng ca phát sinh</span>
+        </div>
+      </div>
+
+      <div id="matrix-tasks-container"></div>
+    </section>
+
+    <!-- ========================================================= -->
+    <!-- TAB 4: EMPLOYEES, SHIFTS & EXCEL IMPORT/EXPORT            -->
+    <!-- ========================================================= -->
+    <section id="tab-panel-master" class="tab-panel">
+      <!-- EXCEL DOWNLOAD / UPLOAD -->
+      <div class="layer">
+        <div class="section-head" style="margin-bottom: var(--space-md);">
+          <div>
+            <h2 class="section-title">Đồng bộ Excel chuẩn <code>mau_phan_ca_kho_OB.xlsx</code></h2>
+            <p class="helper-text">
+              File gồm 2 sheet: <strong>Master Data</strong> và <strong>Lịch Phân Ca</strong> (chứa sẵn công thức <span class="mono-num">VLOOKUP</span> tự động điền Tên NV, Task, Vị trí từ Mã NV).
+            </p>
+          </div>
+          <div style="display:flex; gap:var(--space-sm); flex-wrap:wrap;">
+            <button type="button" class="btn btn-primary" onclick="downloadTemplateXlsx()">
+              <i data-lucide="download" style="width:16px;height:16px;" aria-hidden="true"></i>
+              Tải mẫu mau_phan_ca_kho_OB.xlsx
+            </button>
+            <button type="button" class="btn btn-secondary" onclick="exportSummaryCsv()">
+              <i data-lucide="file-text" style="width:16px;height:16px;" aria-hidden="true"></i>
+              Xuất Báo cáo CSV
+            </button>
+          </div>
+        </div>
+
+        <div class="controls-row">
+          <div class="field">
+            <label for="excel-upload-input">Upload file Excel (.xlsx) hoặc (.csv) đã điền lịch</label>
+            <input type="file" id="excel-upload-input" class="input-ctrl" accept=".xlsx,.csv" style="padding-top:6px;" onchange="handleExcelUpload(this)">
+          </div>
+          <div class="field">
+            <label for="excel-respect-lock">Chế độ kiểm tra khóa khi Import</label>
+            <select id="excel-respect-lock" class="select-ctrl">
+              <option value="strict">Tuân thủ Khóa thời gian (D-1 15:00 &amp; D+2 23:59)</option>
+              <option value="override">Cho phép Admin ghi đè dữ liệu lịch sử từ Excel</option>
+            </select>
+          </div>
+        </div>
+        <div id="excel-upload-feedback" class="notice-strip" style="margin-top: var(--space-sm); display:none;"></div>
+      </div>
+
+      <div class="mgmt-grid">
+        <!-- EMPLOYEE MASTER DATA -->
+        <div class="layer" style="display:grid; gap:var(--space-md);">
+          <div class="section-head">
+            <div>
+              <h3 class="subhead">Quản lý Nhân sự (6 Task &amp; Vị trí SOP)</h3>
+              <p class="helper-text">Thêm mới hoặc cập nhật thông tin nhân sự kho Outbound.</p>
+            </div>
+            <button type="button" id="btn-reset-demo" class="btn btn-ghost btn-sm" onclick="handleResetDemoData(this)">
+              Khôi phục dữ liệu mẫu
+            </button>
+          </div>
+
+          <form id="emp-form" class="form-grid" onsubmit="return saveEmployeeForm(event)">
+            <input type="hidden" id="emp-edit-mode" value="">
+            <div class="field">
+              <label for="emp-id-input">Mã NV</label>
+              <input type="text" id="emp-id-input" class="input-ctrl" placeholder="VD: OB-030" required>
+            </div>
+            <div class="field">
+              <label for="emp-name-input">Họ và Tên NV</label>
+              <input type="text" id="emp-name-input" class="input-ctrl" placeholder="VD: Nguyễn Văn Bình" required>
+            </div>
+            <div class="field">
+              <label for="emp-task-input">Task vụ</label>
+              <select id="emp-task-input" class="select-ctrl" onchange="updateRoleOptionsForTask()"></select>
+            </div>
+            <div class="field">
+              <label for="emp-role-input">Vị trí làm việc</label>
+              <select id="emp-role-input" class="select-ctrl"></select>
+            </div>
+            <div class="field">
+              <label for="emp-active-input">Trạng thái</label>
+              <select id="emp-active-input" class="select-ctrl">
+                <option value="Active">Đang làm việc (Active)</option>
+                <option value="Inactive">Tạm nghỉ (Inactive)</option>
+              </select>
+            </div>
+            <div style="display:flex; gap:var(--space-xs);">
+              <button type="submit" id="emp-submit-btn" class="btn btn-primary btn-sm">Thêm nhân sự</button>
+              <button type="button" id="emp-cancel-btn" class="btn btn-ghost btn-sm" style="display:none;" onclick="cancelEmployeeEdit()">Hủy</button>
+            </div>
+          </form>
+
+          <div class="table-wrap" style="max-height: 440px; overflow-y: auto;">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Mã NV</th>
+                  <th>Tên nhân viên</th>
+                  <th>Task</th>
+                  <th>Vị trí</th>
+                  <th>Trạng thái</th>
+                  <th>Thao tác</th>
+                </tr>
+              </thead>
+              <tbody id="emp-master-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- SHIFT CATEGORIES MANAGEMENT -->
+        <div class="layer" style="display:grid; gap:var(--space-md);">
+          <div class="section-head">
+            <div>
+              <h3 class="subhead">Danh mục Ca &amp; Khung giờ linh hoạt</h3>
+              <p class="helper-text">Hỗ trợ Day Shift, Night Shift và các Ca Giữa (10h-19h, 11h-20h, 12h-21h…).</p>
+            </div>
+          </div>
+
+          <form id="shift-form" class="form-grid" onsubmit="return saveShiftForm(event)">
+            <input type="hidden" id="shift-edit-mode" value="">
+            <div class="field">
+              <label for="shift-code-input">Mã Ca</label>
+              <input type="text" id="shift-code-input" class="input-ctrl" placeholder="VD: MID_13_22" required>
+            </div>
+            <div class="field">
+              <label for="shift-label-input">Tên Ca</label>
+              <input type="text" id="shift-label-input" class="input-ctrl" placeholder="VD: Ca Giữa 13h-22h" required>
+            </div>
+            <div class="field">
+              <label for="shift-short-input">Ký hiệu bảng</label>
+              <input type="text" id="shift-short-input" class="input-ctrl" placeholder="VD: M13" maxlength="5" required>
+            </div>
+            <div class="field">
+              <label for="shift-time-input">Khung giờ</label>
+              <input type="text" id="shift-time-input" class="input-ctrl" placeholder="VD: 13:00-22:00" required>
+            </div>
+            <div class="field">
+              <label for="shift-group-input">Nhóm quy đổi</label>
+              <select id="shift-group-input" class="select-ctrl">
+                <option value="Day">Day (Ca Ngày)</option>
+                <option value="Night">Night (Ca Đêm)</option>
+                <option value="Mid">Mid (Ca Giữa: ⌈M/2⌉ Day / ⌊M/2⌋ Night)</option>
+                <option value="Off">Off (Nghỉ)</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="shift-hours-input">Giờ chuẩn</label>
+              <input type="number" id="shift-hours-input" class="input-ctrl" min="0" max="12" step="0.5" value="8" required>
+            </div>
+            <div style="display:flex; gap:var(--space-xs);">
+              <button type="submit" id="shift-submit-btn" class="btn btn-primary btn-sm">Thêm ca</button>
+              <button type="button" id="shift-cancel-btn" class="btn btn-ghost btn-sm" style="display:none;" onclick="cancelShiftEdit()">Hủy</button>
+            </div>
+          </form>
+
+          <div class="table-wrap">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Mã Ca</th>
+                  <th>Tên Ca &amp; Khung giờ</th>
+                  <th>Ký hiệu</th>
+                  <th>Nhóm QĐ</th>
+                  <th class="num-col">Giờ chuẩn</th>
+                  <th>Thao tác</th>
+                </tr>
+              </thead>
+              <tbody id="shift-master-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <api-shim></api-shim>
+
+  <script>
+    // =========================================================================
+    // 1. CONSTANTS & SOP CONFIGURATION
+    // =========================================================================
+    const TASK_CATALOG = [
+      { id: 'Pick', name: 'Pick', roles: ['Picker FTE', 'Picker PT', 'Control', 'CAP Pick', 'Control Line'] },
+      { id: 'Check', name: 'Check', roles: ['Checker FTE', 'Checker PT', 'CAP Check'] },
+      { id: 'Pack', name: 'Pack', roles: ['Packer FTE', 'Packer PT', 'CAP Pack'] },
+      { id: 'Dispatch', name: 'Dispatch', roles: ['DP FTE', 'DP PT'] },
+      { id: 'TBS', name: 'TBS', roles: ['TBS'] },
+      { id: 'NVL', name: 'NVL', roles: ['CONSUMABLE'] }
+    ];
+
+    const DEFAULT_SHIFTS = [
+      { code: 'DAY', name: 'Ca Ngày (Day Shift)', shortCode: 'D', timeRange: '06:00-15:00', group: 'Day', stdHours: 8 },
+      { code: 'NIGHT', name: 'Ca Đêm (Night Shift)', shortCode: 'N', timeRange: '22:00-07:00', group: 'Night', stdHours: 8 },
+      { code: 'MID_10_19', name: 'Ca Giữa 10h-19h', shortCode: 'M10', timeRange: '10:00-19:00', group: 'Mid', stdHours: 8 },
+      { code: 'MID_11_20', name: 'Ca Giữa 11h-20h', shortCode: 'M11', timeRange: '11:00-20:00', group: 'Mid', stdHours: 8 },
+      { code: 'MID_12_21', name: 'Ca Giữa 12h-21h', shortCode: 'M12', timeRange: '12:00-21:00', group: 'Mid', stdHours: 8 },
+      { code: 'OFF', name: 'Nghỉ (OFF)', shortCode: 'OFF', timeRange: '—', group: 'Off', stdHours: 0 }
+    ];
+
+    const DEFAULT_EMPLOYEES = [
+      { id: 'OB-001', name: 'Nguyễn Văn An', task: 'Pick', role: 'CAP Pick', status: 'Active' },
+      { id: 'OB-002', name: 'Trần Thị Bình', task: 'Pick', role: 'Control', status: 'Active' },
+      { id: 'OB-003', name: 'Lê Hoàng Cường', task: 'Pick', role: 'Control Line', status: 'Active' },
+      { id: 'OB-004', name: 'Phạm Minh Dũng', task: 'Pick', role: 'Picker FTE', status: 'Active' },
+      { id: 'OB-005', name: 'Hoàng Thị Em', task: 'Pick', role: 'Picker FTE', status: 'Active' },
+      { id: 'OB-006', name: 'Vũ Quốc Hùng', task: 'Pick', role: 'Picker FTE', status: 'Active' },
+      { id: 'OB-007', name: 'Đặng Ngọc Khoa', task: 'Pick', role: 'Picker PT', status: 'Active' },
+      { id: 'OB-008', name: 'Bùi Thanh Lan', task: 'Pick', role: 'Picker PT', status: 'Active' },
+
+      { id: 'OB-009', name: 'Đỗ Văn Minh', task: 'Check', role: 'CAP Check', status: 'Active' },
+      { id: 'OB-010', name: 'Ngô Thị Nga', task: 'Check', role: 'Checker FTE', status: 'Active' },
+      { id: 'OB-011', name: 'Dương Quang Phát', task: 'Check', role: 'Checker FTE', status: 'Active' },
+      { id: 'OB-012', name: 'Lý Hải Quân', task: 'Check', role: 'Checker FTE', status: 'Active' },
+      { id: 'OB-013', name: 'Trương Mỹ Tâm', task: 'Check', role: 'Checker PT', status: 'Active' },
+      { id: 'OB-014', name: 'Võ Tấn Tài', task: 'Check', role: 'Checker PT', status: 'Active' },
+
+      { id: 'OB-015', name: 'Huỳnh Thị Uyên', task: 'Pack', role: 'CAP Pack', status: 'Active' },
+      { id: 'OB-016', name: 'Phan Văn Vinh', task: 'Pack', role: 'Packer FTE', status: 'Active' },
+      { id: 'OB-017', name: 'Trịnh Xuân Yến', task: 'Pack', role: 'Packer FTE', status: 'Active' },
+      { id: 'OB-018', name: 'Cao Đức Anh', task: 'Pack', role: 'Packer FTE', status: 'Active' },
+      { id: 'OB-019', name: 'Mai Thị Bích', task: 'Pack', role: 'Packer FTE', status: 'Active' },
+      { id: 'OB-020', name: 'Tạ Hữu Cảnh', task: 'Pack', role: 'Packer PT', status: 'Active' },
+      { id: 'OB-021', name: 'Lâm Ngọc Diệp', task: 'Pack', role: 'Packer PT', status: 'Active' },
+
+      { id: 'OB-022', name: 'Kiều Văn Giang', task: 'Dispatch', role: 'DP FTE', status: 'Active' },
+      { id: 'OB-023', name: 'Chu Thị Hà', task: 'Dispatch', role: 'DP FTE', status: 'Active' },
+      { id: 'OB-024', name: 'Đoàn Nhật Khánh', task: 'Dispatch', role: 'DP PT', status: 'Active' },
+      { id: 'OB-025', name: 'Lương Minh Long', task: 'Dispatch', role: 'DP PT', status: 'Active' },
+
+      { id: 'OB-026', name: 'Mạc Thu Phương', task: 'TBS', role: 'TBS', status: 'Active' },
+      { id: 'OB-027', name: 'Nghiêm Quốc Sơn', task: 'TBS', role: 'TBS', status: 'Active' },
+
+      { id: 'OB-028', name: 'Quách Thị Trang', task: 'NVL', role: 'CONSUMABLE', status: 'Active' },
+      { id: 'OB-029', name: 'Thân Văn Tuấn', task: 'NVL', role: 'CONSUMABLE', status: 'Active' }
+    ];
+
+    function buildSeedSchedule(employees) {
+      const records = {}; // key: `${date}|${empId}` -> { shiftCode, otHours, note }
+      const midCodes = ['MID_10_19', 'MID_11_20', 'MID_12_21'];
+      for (let day = 1; day <= 21; day++) {
+        const dStr = `2026-11-${String(day).padStart(2, '0')}`;
+        const isPeak = (day === 11 || day === 12 || day === 15 || day === 16);
+        employees.forEach((emp, idx) => {
+          // 1 rotating OFF day per 7 days
+          const offMatch = ((day + idx) % 7 === 0);
+          let shiftCode = 'DAY';
+          let otHours = 0;
+
+          if (offMatch && !isPeak) {
+            shiftCode = 'OFF';
+          } else {
+            // Deterministic realistic distribution across Day, Night, and Mid
+            if (emp.task === 'Pick' || emp.task === 'Check' || emp.task === 'Pack') {
+              if (idx % 4 === 1) shiftCode = 'NIGHT';
+              else if (idx % 4 === 2) shiftCode = midCodes[(day + idx) % midCodes.length];
+              else if (idx % 4 === 3 && day % 2 === 0) shiftCode = 'NIGHT';
+              else shiftCode = 'DAY';
+            } else if (emp.task === 'Dispatch') {
+              shiftCode = (idx % 2 === 1) ? 'NIGHT' : ((day % 3 === 0) ? 'MID_11_20' : 'DAY');
+            } else {
+              shiftCode = (idx % 2 === 1) ? 'NIGHT' : 'DAY';
+            }
+
+            if (shiftCode !== 'OFF') {
+              if (day === 11) {
+                otHours = (idx % 3 === 0) ? 3 : 2;
+              } else if (isPeak && idx % 2 === 0) {
+                otHours = 2;
+              } else if ((day + idx) % 5 === 0) {
+                otHours = 1.5;
+              } else if ((day + idx) % 6 === 0) {
+                otHours = 1;
+              }
+            }
+          }
+
+          records[`${dStr}|${emp.id}`] = {
+            shiftCode: shiftCode,
+            otHours: otHours,
+            note: isPeak && otHours > 0 ? `Cao điểm` : ``
+          };
+        });
+      }
+      return records;
+    }
+
+    // =========================================================================
+    // 2. APPLICATION STATE & SHIM PERSISTENCE
+    // =========================================================================
+    let appState = {
+      employees: JSON.parse(JSON.stringify(DEFAULT_EMPLOYEES)),
+      shifts: JSON.parse(JSON.stringify(DEFAULT_SHIFTS)),
+      records: buildSeedSchedule(DEFAULT_EMPLOYEES),
+      rangeStart: '2026-11-01',
+      rangeEnd: '2026-11-21',
+      simClock: '2026-11-17T14:30',
+      activeTab: 'dashboard',
+      schedDate: '2026-11-18',
+      drilldown: { mode: 'task', id: 'Pick', prevTaskId: 'Pick' },
+      screenshotMode: false
+    };
+
+    let chartInstances = {};
+    let saveTimer = null;
+
+    function persistState() {
+      clearTimeout(saveTimer);
+      saveTimer = setTimeout(async () => {
+        if (window.notebookAppApi && typeof window.notebookAppApi.setAppState === 'function') {
+          try {
+            await window.notebookAppApi.setAppState(appState);
+          } catch (e) {
+            // Safe fallback
+          }
+        }
+      }, 150);
+    }
+
+    function getThemeColor(varName) {
+      return getComputedStyle(document.documentElement).getPropertyValue(varName).trim();
+    }
+
+    function showToast(msg, tone) {
+      const box = document.getElementById('global-status');
+      const txt = document.getElementById('global-status-text');
+      if (!box || !txt) return;
+      box.className = 'notice-strip';
+      if (tone === 'positive') box.classList.add('is-positive');
+      else if (tone === 'warning') box.classList.add('is-warning');
+      else if (tone === 'error') box.classList.add('is-error');
+      txt.textContent = msg;
+    }
+
+    // =========================================================================
+    // 3. DATE & TIME LOCK ENGINE (D-1 15:00 & D+2 23:59:59)
+    // =========================================================================
+    function parseYMD(ymd) {
+      const parts = String(ymd || '').split('-').map(Number);
+      if (parts.length !== 3 || parts.some(isNaN)) return null;
+      return new Date(parts[0], parts[1] - 1, parts[2], 0, 0, 0, 0);
+    }
+
+    function formatYMD(dt) {
+      const y = dt.getFullYear();
+      const m = String(dt.getMonth() + 1).padStart(2, '0');
+      const d = String(dt.getDate()).padStart(2, '0');
+      return `${y}-${m}-${d}`;
+    }
+
+    function formatVNDate(ymd) {
+      const parts = String(ymd || '').split('-');
+      if (parts.length !== 3) return ymd;
+      return `${parts[2]}/${parts[1]}/${parts[0]}`;
+    }
+
+    function formatShortVNDate(ymd) {
+      const parts = String(ymd || '').split('-');
+      if (parts.length !== 3) return ymd;
+      return `${parts[2]}/${parts[1]}`;
+    }
+
+    function getVNWeekday(ymd) {
+      const dt = parseYMD(ymd);
+      if (!dt) return '';
+      const names = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
+      return names[dt.getDay()];
+    }
+
+    function getDatesInRange(startYmd, endYmd) {
+      const s = parseYMD(startYmd);
+      const e = parseYMD(endYmd);
+      if (!s || !e || s > e) return [];
+      const arr = [];
+      const cur = new Date(s.getTime());
+      let safety = 0;
+      while (cur <= e && safety < 120) {
+        arr.push(formatYMD(cur));
+        cur.setDate(cur.getDate() + 1);
+        safety++;
+      }
+      return arr;
+    }
+
+    function getSystemNow() {
+      const raw = appState.simClock || '2026-11-17T14:30';
+      const dt = new Date(raw);
+      return isNaN(dt.getTime()) ? new Date(2026, 10, 17, 14, 30, 0) : dt;
+    }
+
+    // Shift lock: Ngày D chỉ được sửa trước 15:00 ngày D-1
+    function isShiftLocked(dateYmd) {
+      const d = parseYMD(dateYmd);
+      if (!d) return { locked: true, deadlineStr: '' };
+      const deadline = new Date(d.getFullYear(), d.getMonth(), d.getDate() - 1, 15, 0, 0, 0);
+      const now = getSystemNow();
+      return {
+        locked: now.getTime() >= deadline.getTime(),
+        deadlineStr: `${formatShortVNDate(formatYMD(deadline))} 15:00`
+      };
+    }
+
+    // OT lock: Hạn chốt sửa OT là 23:59:59 ngày D+2
+    function isOtLocked(dateYmd) {
+      const d = parseYMD(dateYmd);
+      if (!d) return { locked: true, deadlineStr: '' };
+      const deadline = new Date(d.getFullYear(), d.getMonth(), d.getDate() + 2, 23, 59, 59, 999);
+      const now = getSystemNow();
+      return {
+        locked: now.getTime() > deadline.getTime(),
+        deadlineStr: `${formatShortVNDate(formatYMD(deadline))} 23:59:59`
+      };
+    }
+
+    // =========================================================================
+    // 4. CORE COMPUTATION & MID-SHIFT CONVERSION ENGINE
+    // =========================================================================
+    function getShiftDef(code) {
+      return appState.shifts.find(s => s.code === code) || {
+        code: code || 'OFF',
+        name: code || 'Nghỉ',
+        shortCode: code ? code.slice(0, 3) : 'OFF',
+        timeRange: '—',
+        group: 'Off',
+        stdHours: 0
+      };
+    }
+
+    function getRecord(dateYmd, empId) {
+      return appState.records[`${dateYmd}|${empId}`] || { shiftCode: 'OFF', otHours: 0, note: '' };
+    }
+
+    // Mid-shift conversion formula: Day += Math.ceil(mid/2), Night += Math.floor(mid/2)
+    function convertMidCounts(rawDay, rawNight, rawMid) {
+      const midToDay = Math.ceil(rawMid / 2);
+      const midToNight = Math.floor(rawMid / 2);
+      return {
+        rawDay,
+        rawNight,
+        rawMid,
+        midToDay,
+        midToNight,
+        convDay: rawDay + midToDay,
+        convNight: rawNight + midToNight
+      };
+    }
+
+    function computeRangeAnalytics(startYmd, endYmd) {
+      const dates = getDatesInRange(startYmd, endYmd);
+      const activeEmps = appState.employees.filter(e => e.status === 'Active');
+      const taskStats = {};
+      TASK_CATALOG.forEach(t => {
+        taskStats[t.id] = {
+          task: t.id,
+          rawDay: 0,
+          rawNight: 0,
+          rawMid: 0,
+          midToDay: 0,
+          midToNight: 0,
+          convDay: 0,
+          convNight: 0,
+          totalShifts: 0,
+          baseHours: 0,
+          otHours: 0,
+          totalHours: 0,
+          daily: {}
+        };
+      });
+
+      const dailyTotals = [];
+      let obRawDay = 0, obRawNight = 0, obRawMid = 0;
+      let obConvDay = 0, obConvNight = 0;
+      let obTotalShifts = 0, obBaseHours = 0, obOtHours = 0, obTotalHours = 0;
+
+      dates.forEach(d => {
+        let dRawDay = 0, dRawNight = 0, dRawMid = 0;
+        let dConvDay = 0, dConvNight = 0;
+        let dShifts = 0, dBaseHours = 0, dOtHours = 0;
+        const dTaskOt = {};
+        TASK_CATALOG.forEach(t => {
+          dTaskOt[t.id] = 0;
+          taskStats[t.id].daily[d] = {
+            date: d, rawDay: 0, rawNight: 0, rawMid: 0,
+            midToDay: 0, midToNight: 0, convDay: 0, convNight: 0,
+            totalShifts: 0, baseHours: 0, otHours: 0, totalHours: 0
+          };
+        });
+
+        activeEmps.forEach(emp => {
+          const rec = getRecord(d, emp.id);
+          const sDef = getShiftDef(rec.shiftCode);
+          const ot = Number(rec.otHours) || 0;
+          const tObj = taskStats[emp.task] ? taskStats[emp.task].daily[d] : null;
+          if (!tObj) return;
+
+          if (sDef.group !== 'Off') {
+            tObj.totalShifts += 1;
+            tObj.baseHours += Number(sDef.stdHours || 8);
+            tObj.otHours += ot;
+            tObj.totalHours += Number(sDef.stdHours || 8) + ot;
+
+            dShifts += 1;
+            dBaseHours += Number(sDef.stdHours || 8);
+            dOtHours += ot;
+            dTaskOt[emp.task] += ot;
+
+            if (sDef.group === 'Day') {
+              tObj.rawDay += 1;
+              dRawDay += 1;
+            } else if (sDef.group === 'Night') {
+              tObj.rawNight += 1;
+              dRawNight += 1;
+            } else if (sDef.group === 'Mid') {
+              tObj.rawMid += 1;
+              dRawMid += 1;
+            }
+          } else if (ot > 0) {
+            tObj.otHours += ot;
+            tObj.totalHours += ot;
+            dOtHours += ot;
+            dTaskOt[emp.task] += ot;
+          }
+        });
+
+        // Apply per-task Mid-shift conversion for this day D
+        TASK_CATALOG.forEach(t => {
+          const td = taskStats[t.id].daily[d];
+          const conv = convertMidCounts(td.rawDay, td.rawNight, td.rawMid);
+          td.midToDay = conv.midToDay;
+          td.midToNight = conv.midToNight;
+          td.convDay = conv.convDay;
+          td.convNight = conv.convNight;
+
+          const ts = taskStats[t.id];
+          ts.rawDay += td.rawDay;
+          ts.rawNight += td.rawNight;
+          ts.rawMid += td.rawMid;
+          ts.midToDay += td.midToDay;
+          ts.midToNight += td.midToNight;
+          ts.convDay += td.convDay;
+          ts.convNight += td.convNight;
+          ts.totalShifts += td.totalShifts;
+          ts.baseHours += td.baseHours;
+          ts.otHours += td.otHours;
+          ts.totalHours += td.totalHours;
+        });
+
+        // Warehouse-level daily mid conversion (Math.ceil(totalMid/2) / Math.floor(totalMid/2))
+        const obDayConv = convertMidCounts(dRawDay, dRawNight, dRawMid);
+        dConvDay = obDayConv.convDay;
+        dConvNight = obDayConv.convNight;
+
+        obRawDay += dRawDay;
+        obRawNight += dRawNight;
+        obRawMid += dRawMid;
+        obConvDay += dConvDay;
+        obConvNight += dConvNight;
+        obTotalShifts += dShifts;
+        obBaseHours += dBaseHours;
+        obOtHours += dOtHours;
+        obTotalHours += dBaseHours + dOtHours;
+
+        dailyTotals.push({
+          date: d,
+          rawDay: dRawDay,
+          rawNight: dRawNight,
+          rawMid: dRawMid,
+          midToDay: obDayConv.midToDay,
+          midToNight: obDayConv.midToNight,
+          convDay: dConvDay,
+          convNight: dConvNight,
+          totalShifts: dShifts,
+          baseHours: dBaseHours,
+          otHours: dOtHours,
+          totalHours: dBaseHours + dOtHours,
+          taskOt: dTaskOt
+        });
+      });
+
+      return {
+        dates,
+        activeEmps,
+        taskStats,
+        dailyTotals,
+        ob: {
+          rawDay: obRawDay,
+          rawNight: obRawNight,
+          rawMid: obRawMid,
+          midToDay: obConvDay - obRawDay,
+          midToNight: obConvNight - obRawNight,
+          convDay: obConvDay,
+          convNight: obConvNight,
+          totalShifts: obTotalShifts,
+          baseHours: obBaseHours,
+          otHours: obOtHours,
+          totalHours: obTotalHours
+        }
+      };
+    }
+
+    // =========================================================================
+    // 5. NAVIGATION & GLOBAL CONTROLS
+    // =========================================================================
+    function switchTab(tabId) {
+      appState.activeTab = tabId;
+      ['dashboard', 'schedule', 'matrix', 'master'].forEach(id => {
+        const btn = document.getElementById(`tab-btn-${id}`);
+        const panel = document.getElementById(`tab-panel-${id}`);
+        if (btn) btn.classList.toggle('is-active', id === tabId);
+        if (panel) panel.classList.toggle('is-active', id === tabId);
+      });
+      if (tabId === 'dashboard') renderDashboard();
+      if (tabId === 'schedule') renderScheduleEditor();
+      if (tabId === 'matrix') renderMonthlyMatrix();
+      if (tabId === 'master') renderMasterTab();
+      persistState();
+    }
+
+    function onDateRangeChange() {
+      const sEl = document.getElementById('range-start');
+      const eEl = document.getElementById('range-end');
+      if (!sEl || !eEl) return;
+      if (sEl.value && eEl.value && sEl.value > eEl.value) {
+        eEl.value = sEl.value;
+      }
+      appState.rangeStart = sEl.value;
+      appState.rangeEnd = eEl.value;
+      refreshAllViews();
+      persistState();
+    }
+
+    function onSimClockChange() {
+      const el = document.getElementById('sim-clock');
+      if (!el) return;
+      appState.simClock = el.value;
+      updateClockBadge();
+      if (appState.activeTab === 'schedule') renderScheduleEditor();
+      if (appState.activeTab === 'dashboard' && appState.drilldown.mode === 'employee') {
+        renderDrilldown();
+      }
+      persistState();
+    }
+
+    function setClockPreset(val) {
+      const el = document.getElementById('sim-clock');
+      if (!el) return;
+      if (val === 'now') {
+        const now = new Date();
+        const y = now.getFullYear();
+        const m = String(now.getMonth() + 1).padStart(2, '0');
+        const d = String(now.getDate()).padStart(2, '0');
+        const hh = String(now.getHours()).padStart(2, '0');
+        const mm = String(now.getMinutes()).padStart(2, '0');
+        el.value = `${y}-${m}-${d}T${hh}:${mm}`;
+      } else {
+        el.value = val;
+      }
+      onSimClockChange();
+      showToast(`Đã cập nhật đồng hồ kiểm tra khóa: ${el.value.replace('T', ' ')}`, 'positive');
+    }
+
+    function updateClockBadge() {
+      const badge = document.getElementById('clock-summary-badge');
+      if (!badge) return;
+      const now = getSystemNow();
+      const dd = String(now.getDate()).padStart(2, '0');
+      const mm = String(now.getMonth() + 1).padStart(2, '0');
+      const yy = now.getFullYear();
+      const hh = String(now.getHours()).padStart(2, '0');
+      const mi = String(now.getMinutes()).padStart(2, '0');
+      badge.textContent = `Đồng hồ: ${dd}/${mm}/${yy} ${hh}:${mi}`;
+    }
+
+    function populateStaticSelectors() {
+      const taskSelects = ['sched-task-filter', 'matrix-task-filter'];
+      taskSelects.forEach(id => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        const prev = el.value || 'ALL';
+        el.innerHTML = `<option value="ALL">Tất cả 6 Task vụ</option>`;
+        TASK_CATALOG.forEach(t => {
+          const opt = document.createElement('option');
+          opt.value = t.id;
+          opt.textContent = `${t.name} (${t.roles.join(', ')})`;
+          el.appendChild(opt);
+        });
+        el.value = prev;
+      });
+
+      const empTaskEl = document.getElementById('emp-task-input');
+      if (empTaskEl) {
+        const prevT = empTaskEl.value || 'Pick';
+        empTaskEl.innerHTML = '';
+        TASK_CATALOG.forEach(t => {
+          const opt = document.createElement('option');
+          opt.value = t.id;
+          opt.textContent = t.name;
+          empTaskEl.appendChild(opt);
+        });
+        empTaskEl.value = prevT;
+        updateRoleOptionsForTask();
+      }
+
+      const quickEmp = document.getElementById('quick-emp-search');
+      if (quickEmp) {
+        const cur = quickEmp.value;
+        quickEmp.innerHTML = `<option value="">— Chọn nhân viên để xem báo cáo —</option>`;
+        appState.employees.forEach(e => {
+          const opt = document.createElement('option');
+          opt.value = e.id;
+          opt.textContent = `${e.id} · ${e.name} (${e.task} - ${e.role})`;
+          quickEmp.appendChild(opt);
+        });
+        if (cur) quickEmp.value = cur;
+      }
+    }
+
+    function updateRoleOptionsForTask() {
+      const taskEl = document.getElementById('emp-task-input');
+      const roleEl = document.getElementById('emp-role-input');
+      if (!taskEl || !roleEl) return;
+      const taskObj = TASK_CATALOG.find(t => t.id === taskEl.value) || TASK_CATALOG[0];
+      const prevRole = roleEl.value;
+      roleEl.innerHTML = '';
+      taskObj.roles.forEach(r => {
+        const opt = document.createElement('option');
+        opt.value = r;
+        opt.textContent = r;
+        roleEl.appendChild(opt);
+      });
+      if (taskObj.roles.includes(prevRole)) roleEl.value = prevRole;
+    }
+
+    // =========================================================================
+    // 6. RENDER DASHBOARD, CHARTS & DRILL-DOWN
+    // =========================================================================
+    function renderKpiStrip(analytics) {
+      const { ob, dates, activeEmps } = analytics;
+      const totalHrsEl = document.getElementById('kpi-total-hours');
+      const hrsFormulaEl = document.getElementById('kpi-hours-formula');
+      const totalShiftsEl = document.getElementById('kpi-total-shifts');
+      const shiftsSubEl = document.getElementById('kpi-shifts-sub');
+      const dnEl = document.getElementById('kpi-day-night');
+      const midNoteEl = document.getElementById('kpi-mid-note');
+      const otEl = document.getElementById('kpi-total-ot');
+      const otShareEl = document.getElementById('kpi-ot-share');
+      const hcEl = document.getElementById('kpi-headcount');
+      const avgDailyEl = document.getElementById('kpi-avg-daily');
+
+      if (totalHrsEl) totalHrsEl.textContent = `${ob.totalHours.toLocaleString('vi-VN')}h`;
+      if (hrsFormulaEl) hrsFormulaEl.textContent = `(${ob.totalShifts} ca × 8h = ${ob.baseHours}h) + ${ob.otHours}h OT`;
+      if (totalShiftsEl) totalShiftsEl.textContent = ob.totalShifts.toLocaleString('vi-VN');
+      if (shiftsSubEl) shiftsSubEl.textContent = `Trong ${dates.length} ngày (${formatShortVNDate(appState.rangeStart)}–${formatShortVNDate(appState.rangeEnd)})`;
+      if (dnEl) dnEl.textContent = `${ob.convDay} / ${ob.convNight}`;
+      if (midNoteEl) midNoteEl.textContent = `Gốc ${ob.rawDay}D/${ob.rawNight}N + ${ob.rawMid} Mid (→ +${ob.midToDay}D / +${ob.midToNight}N)`;
+      if (otEl) otEl.textContent = `${ob.otHours.toLocaleString('vi-VN')}h`;
+      const otPct = ob.totalHours > 0 ? ((ob.otHours / ob.totalHours) * 100).toFixed(1) : '0.0';
+      if (otShareEl) otShareEl.textContent = `Chiếm ${otPct}% tổng giờ vận hành`;
+      if (hcEl) hcEl.textContent = `${activeEmps.length}`;
+      const avgD = dates.length > 0 ? (ob.totalShifts / dates.length).toFixed(1) : '0';
+      if (avgDailyEl) avgDailyEl.textContent = `Trung bình ${avgD} người/ngày`;
+    }
+
+    function renderDashboard() {
+      const analytics = computeRangeAnalytics(appState.rangeStart, appState.rangeEnd);
+      renderKpiStrip(analytics);
+
+      // 1. Task summary table
+      const tbody = document.getElementById('task-summary-tbody');
+      if (tbody) {
+        tbody.innerHTML = '';
+        TASK_CATALOG.forEach(t => {
+          const st = analytics.taskStats[t.id];
+          const isSel = appState.drilldown.mode === 'task' && appState.drilldown.id === t.id;
+          const tr = document.createElement('tr');
+          if (isSel) tr.classList.add('is-selected');
+          tr.innerHTML = `
+            <td>
+              <button type="button" class="link-btn" onclick="drilldownTask('${t.id}')">${t.name}</button>
+            </td>
+            <td class="num-col">${st.rawDay}</td>
+            <td class="num-col">${st.rawNight}</td>
+            <td class="num-col">${st.rawMid}</td>
+            <td class="num-col"><strong>${st.convDay}</strong></td>
+            <td class="num-col"><strong>${st.convNight}</strong></td>
+            <td class="num-col">${st.totalShifts}</td>
+            <td class="num-col">${st.otHours.toFixed(1)}h</td>
+            <td class="num-col"><strong>${st.totalHours.toFixed(1)}h</strong></td>
+          `;
+          tbody.appendChild(tr);
+        });
+
+        // Grand total row
+        const ob = analytics.ob;
+        const trTot = document.createElement('tr');
+        trTot.style.fontWeight = '600';
+        trTot.innerHTML = `
+          <td>TỔNG KHO OB (Quy đổi theo ngày)</td>
+          <td class="num-col">${ob.rawDay}</td>
+          <td class="num-col">${ob.rawNight}</td>
+          <td class="num-col">${ob.rawMid}</td>
+          <td class="num-col">${ob.convDay}</td>
+          <td class="num-col">${ob.convNight}</td>
+          <td class="num-col">${ob.totalShifts}</td>
+          <td class="num-col">${ob.otHours.toFixed(1)}h</td>
+          <td class="num-col">${ob.totalHours.toFixed(1)}h</td>
+        `;
+        tbody.appendChild(trTot);
+      }
+
+      // 2. Charts
+      renderCharts(analytics);
+
+      // 3. Mini pies per task
+      renderTaskMiniPies(analytics);
+
+      // 4. Drill-down panel
+      renderDrilldown(analytics);
+    }
+
+    function destroyChart(key) {
+      if (chartInstances[key]) {
+        chartInstances[key].destroy();
+        delete chartInstances[key];
+      }
+    }
+
+    function renderCharts(analytics) {
+      if (typeof Chart === 'undefined') return;
+      const c1 = getThemeColor('--data-1');
+      const c2 = getThemeColor('--data-2');
+      const c3 = getThemeColor('--data-3');
+      const c4 = getThemeColor('--data-4');
+      const c5 = getThemeColor('--data-5');
+      const c6 = getThemeColor('--data-6');
+      const cInk = getThemeColor('--on-surface');
+      const cMuted = getThemeColor('--on-surface-variant');
+      const cGrid = getThemeColor('--outline-variant');
+      const cNight = getThemeColor('--night-surface');
+      const cWarn = getThemeColor('--warning');
+      const taskPalette = [c1, c2, c3, c4, c5, c6];
+
+      Chart.defaults.font.family = "'IBM Plex Sans', sans-serif";
+      Chart.defaults.color = cMuted;
+
+      // A. OB Total Day vs Night Doughnut
+      destroyChart('obDayNight');
+      const ctxOb = document.getElementById('chart-ob-day-night');
+      if (ctxOb) {
+        const dTot = analytics.ob.convDay;
+        const nTot = analytics.ob.convNight;
+        const sumDN = dTot + nTot;
+        const cap = document.getElementById('ob-day-night-caption');
+        if (cap) {
+          const dp = sumDN ? ((dTot / sumDN) * 100).toFixed(1) : '0.0';
+          const np = sumDN ? ((nTot / sumDN) * 100).toFixed(1) : '0.0';
+          cap.textContent = `Day QĐ: ${dTot} lượt (${dp}%) · Night QĐ: ${nTot} lượt (${np}%) — đã bao gồm ${analytics.ob.rawMid} lượt Ca giữa.`;
+        }
+        chartInstances.obDayNight = new Chart(ctxOb, {
+          type: 'doughnut',
+          data: {
+            labels: ['Ca Day (đã quy đổi)', 'Ca Night (đã quy đổi)'],
+            datasets: [{
+              data: [dTot, nTot],
+              backgroundColor: [c1, cNight],
+              borderWidth: 2,
+              borderColor: getThemeColor('--background')
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: '58%',
+            plugins: {
+              legend: { position: 'top', align: 'start', labels: { boxWidth: 12, boxHeight: 12 } }
+            }
+          }
+        });
+      }
+
+      // B. Task Headcount Stacked Bar (clickable)
+      destroyChart('taskBar');
+      const ctxBar = document.getElementById('chart-task-headcount');
+      if (ctxBar) {
+        const labels = TASK_CATALOG.map(t => t.name);
+        const dayVals = TASK_CATALOG.map(t => analytics.taskStats[t.id].convDay);
+        const nightVals = TASK_CATALOG.map(t => analytics.taskStats[t.id].convNight);
+        chartInstances.taskBar = new Chart(ctxBar, {
+          type: 'bar',
+          data: {
+            labels,
+            datasets: [
+              { label: 'Ca Day (QĐ)', data: dayVals, backgroundColor: c1, borderRadius: 0 },
+              { label: 'Ca Night (QĐ)', data: nightVals, backgroundColor: cNight, borderRadius: 0 }
+            ]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            onClick: (_evt, elements) => {
+              if (elements && elements.length > 0) {
+                const idx = elements[0].index;
+                const taskObj = TASK_CATALOG[idx];
+                if (taskObj) drilldownTask(taskObj.id);
+              }
+            },
+            scales: {
+              x: { stacked: true, grid: { display: false } },
+              y: { stacked: true, beginAtZero: true, grid: { color: cGrid } }
+            },
+            plugins: {
+              legend: { position: 'top', align: 'start', labels: { boxWidth: 12, boxHeight: 12 } }
+            }
+          }
+        });
+      }
+
+      // C. Task Share Pie
+      destroyChart('taskShare');
+      const ctxShare = document.getElementById('chart-task-share');
+      if (ctxShare) {
+        chartInstances.taskShare = new Chart(ctxShare, {
+          type: 'pie',
+          data: {
+            labels: TASK_CATALOG.map(t => t.name),
+            datasets: [{
+              data: TASK_CATALOG.map(t => analytics.taskStats[t.id].totalShifts),
+              backgroundColor: taskPalette,
+              borderWidth: 2,
+              borderColor: getThemeColor('--background')
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            onClick: (_evt, elements) => {
+              if (elements && elements.length > 0) {
+                const taskObj = TASK_CATALOG[elements[0].index];
+                if (taskObj) drilldownTask(taskObj.id);
+              }
+            },
+            plugins: {
+              legend: { position: 'right', labels: { boxWidth: 12, boxHeight: 12 } }
+            }
+          }
+        });
+      }
+
+      // D. Daily OT (Stacked by Task) + Total Operating Hours Line
+      destroyChart('dailyOt');
+      const ctxOt = document.getElementById('chart-daily-ot');
+      const otBadge = document.getElementById('ot-chart-badge');
+      if (otBadge) {
+        otBadge.textContent = `Tổng giờ vận hành: ${analytics.ob.totalHours.toLocaleString('vi-VN')}h (OT: ${analytics.ob.otHours.toLocaleString('vi-VN')}h)`;
+      }
+      if (ctxOt) {
+        const labels = analytics.dailyTotals.map(d => formatShortVNDate(d.date));
+        const datasets = TASK_CATALOG.map((t, i) => ({
+          type: 'bar',
+          label: `OT ${t.name}`,
+          data: analytics.dailyTotals.map(d => d.taskOt[t.id] || 0),
+          backgroundColor: taskPalette[i],
+          stack: 'otStack',
+          yAxisID: 'yOt'
+        }));
+        datasets.push({
+          type: 'line',
+          label: 'Tổng giờ vận hành (8h + OT)',
+          data: analytics.dailyTotals.map(d => d.totalHours),
+          borderColor: cInk,
+          backgroundColor: cInk,
+          borderWidth: 2,
+          pointRadius: 3,
+          tension: 0,
+          yAxisID: 'yTotal'
+        });
+
+        chartInstances.dailyOt = new Chart(ctxOt, {
+          data: { labels, datasets },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+              x: { stacked: true, grid: { display: false } },
+              yOt: {
+                type: 'linear',
+                position: 'left',
+                stacked: true,
+                beginAtZero: true,
+                title: { display: true, text: 'Giờ OT (h)' },
+                grid: { color: cGrid }
+              },
+              yTotal: {
+                type: 'linear',
+                position: 'right',
+                beginAtZero: true,
+                title: { display: true, text: 'Tổng giờ VH (h)' },
+                grid: { drawOnChartArea: false }
+              }
+            },
+            plugins: {
+              legend: { position: 'top', align: 'start', labels: { boxWidth: 12, boxHeight: 12 } }
+            }
+          }
+        });
+      }
+    }
+
+    function renderTaskMiniPies(analytics) {
+      const grid = document.getElementById('task-mini-pies-grid');
+      if (!grid) return;
+      grid.innerHTML = '';
+
+      const c1 = getThemeColor('--data-1');
+      const cNight = getThemeColor('--night-surface');
+      const cBg = getThemeColor('--background');
+
+      TASK_CATALOG.forEach(t => {
+        destroyChart(`mini_${t.id}`);
+        const st = analytics.taskStats[t.id];
+        const total = st.convDay + st.convNight;
+        const dayPct = total ? ((st.convDay / total) * 100).toFixed(0) : '0';
+        const nightPct = total ? ((st.convNight / total) * 100).toFixed(0) : '0';
+
+        const card = document.createElement('div');
+        card.className = 'mini-pie-card';
+        if (appState.drilldown.mode === 'task' && appState.drilldown.id === t.id) {
+          card.classList.add('is-selected');
+        }
+        card.onclick = () => drilldownTask(t.id);
+
+        const head = document.createElement('div');
+        head.style.display = 'flex';
+        head.style.justifyContent = 'space-between';
+        head.style.alignItems = 'center';
+        head.innerHTML = `<strong style="font-size:1rem;">Task ${t.name}</strong><span class="label-mono">${st.totalShifts} ca · ${st.totalHours.toFixed(0)}h</span>`;
+
+        const box = document.createElement('div');
+        box.className = 'chart-box-sm';
+        const canvas = document.createElement('canvas');
+        box.appendChild(canvas);
+
+        const foot = document.createElement('div');
+        foot.className = 'helper-text mono-num';
+        foot.textContent = `Day: ${st.convDay} (${dayPct}%) · Night: ${st.convNight} (${nightPct}%)`;
+
+        card.appendChild(head);
+        card.appendChild(box);
+        card.appendChild(foot);
+        grid.appendChild(card);
+
+        if (typeof Chart !== 'undefined') {
+          chartInstances[`mini_${t.id}`] = new Chart(canvas, {
+            type: 'doughnut',
+            data: {
+              labels: ['Day QĐ', 'Night QĐ'],
+              datasets: [{
+                data: [st.convDay, st.convNight],
+                backgroundColor: [c1, cNight],
+                borderWidth: 2,
+                borderColor: cBg
+              }]
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              cutout: '55%',
+              plugins: {
+                legend: { display: false }
+              }
+            }
+          });
+        }
+      });
+    }
+
+    // Drill-down interactions
+    function drilldownTask(taskId) {
+      appState.drilldown = { mode: 'task', id: taskId, prevTaskId: taskId };
+      const qEl = document.getElementById('quick-emp-search');
+      if (qEl) qEl.value = '';
+      renderDashboard();
+      const el = document.getElementById('drilldown-container');
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    function drilldownEmployee(empId) {
+      const prevTask = appState.drilldown.mode === 'task' ? appState.drilldown.id : (appState.drilldown.prevTaskId || 'Pick');
+      appState.drilldown = { mode: 'employee', id: empId, prevTaskId: prevTask };
+      const qEl = document.getElementById('quick-emp-search');
+      if (qEl) qEl.value = empId;
+      switchTab('dashboard');
+      const el = document.getElementById('drilldown-container');
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    function onQuickEmployeeSelect(empId) {
+      if (!empId) return;
+      drilldownEmployee(empId);
+    }
+
+    function backToTaskDrilldown() {
+      const tId = appState.drilldown.prevTaskId || 'Pick';
+      drilldownTask(tId);
+    }
+
+    function renderDrilldown(analyticsArg) {
+      const analytics = analyticsArg || computeRangeAnalytics(appState.rangeStart, appState.rangeEnd);
+      const eyebrow = document.getElementById('drilldown-eyebrow');
+      const title = document.getElementById('drilldown-title');
+      const kpis = document.getElementById('drilldown-kpis');
+      const body = document.getElementById('drilldown-body');
+      const backBtn = document.getElementById('btn-drill-back-task');
+      if (!eyebrow || !title || !kpis || !body) return;
+
+      if (appState.drilldown.mode === 'employee') {
+        const emp = appState.employees.find(e => e.id === appState.drilldown.id);
+        if (!emp) return;
+        if (backBtn) backBtn.style.display = 'inline-flex';
+        eyebrow.textContent = `DRILL-DOWN CÁ NHÂN · ${emp.id} · TASK ${emp.task} (${emp.role})`;
+        title.textContent = `Lịch làm việc & Hiệu suất: ${emp.name}`;
+
+        let workDays = 0, dayCount = 0, nightCount = 0, midCount = 0, baseHrs = 0, otHrs = 0;
+        const rows = [];
+        analytics.dates.forEach(d => {
+          const rec = getRecord(d, emp.id);
+          const sDef = getShiftDef(rec.shiftCode);
+          const ot = Number(rec.otHours) || 0;
+          const isWork = sDef.group !== 'Off';
+          const std = isWork ? Number(sDef.stdHours || 8) : 0;
+          if (isWork) {
+            workDays += 1;
+            if (sDef.group === 'Day') dayCount += 1;
+            if (sDef.group === 'Night') nightCount += 1;
+            if (sDef.group === 'Mid') midCount += 1;
+          }
+          baseHrs += std;
+          otHrs += ot;
+          rows.push({ date: d, rec, sDef, std, ot, total: std + ot });
+        });
+
+        const totalHrs = baseHrs + otHrs;
+        kpis.innerHTML = `
+          <div class="drilldown-tile">
+            <div class="label-mono">Tổng số ngày làm việc</div>
+            <div class="kpi-value">${workDays} ngày</div>
+            <div class="helper-text">Trong ${analytics.dates.length} ngày xem report</div>
+          </div>
+          <div class="drilldown-tile">
+            <div class="label-mono">Tổng giờ vận hành tích lũy</div>
+            <div class="kpi-value">${totalHrs.toFixed(1)}h</div>
+            <div class="helper-text">${baseHrs}h ca chuẩn + ${otHrs.toFixed(1)}h OT</div>
+          </div>
+          <div class="drilldown-tile">
+            <div class="label-mono">Phân bổ nhóm ca</div>
+            <div class="kpi-value">${dayCount}D / ${nightCount}N / ${midCount}M</div>
+            <div class="helper-text">Day / Night / Ca giữa</div>
+          </div>
+          <div class="drilldown-tile">
+            <div class="label-mono">Tổng giờ OT cá nhân</div>
+            <div class="kpi-value">${otHrs.toFixed(1)}h</div>
+            <div class="helper-text">Trung bình ${workDays ? (otHrs / workDays).toFixed(2) : '0.00'}h OT/ngày làm</div>
+          </div>
+        `;
+
+        let html = `
+          <div class="table-wrap">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Ngày</th>
+                  <th>Thứ</th>
+                  <th>Ca làm việc</th>
+                  <th>Khung giờ</th>
+                  <th>Nhóm</th>
+                  <th class="num-col">Giờ ca 8h</th>
+                  <th class="num-col">Giờ OT</th>
+                  <th class="num-col">Tổng giờ VH</th>
+                  <th>Khóa Ca / OT</th>
+                </tr>
+              </thead>
+              <tbody>
+        `;
+        rows.forEach(r => {
+          const sLock = isShiftLocked(r.date);
+          const oLock = isOtLocked(r.date);
+          const tagCls = r.sDef.group === 'Day' ? 'tag-day' : (r.sDef.group === 'Night' ? 'tag-night' : (r.sDef.group === 'Mid' ? 'tag-mid' : 'tag-off'));
+          html += `
+            <tr>
+              <td class="mono-num">${formatVNDate(r.date)}</td>
+              <td class="mono-num">${getVNWeekday(r.date)}</td>
+              <td><span class="tag ${tagCls}">${r.sDef.name}</span></td>
+              <td class="mono-num">${r.sDef.timeRange}</td>
+              <td>${r.sDef.group}</td>
+              <td class="num-col">${r.std}h</td>
+              <td class="num-col">${r.ot.toFixed(1)}h</td>
+              <td class="num-col"><strong>${r.total.toFixed(1)}h</strong></td>
+              <td class="mono-num" style="font-size:0.75rem;">
+                Ca: ${sLock.locked ? '🔒 Khóa' : 'Mở'} · OT: ${oLock.locked ? '🔒 Khóa' : 'Mở'}
+              </td>
+            </tr>
+          `;
+        });
+        html += `</tbody></table></div>`;
+        body.innerHTML = html;
+        return;
+      }
+
+      // TASK DRILL-DOWN MODE
+      if (backBtn) backBtn.style.display = 'none';
+      const taskId = appState.drilldown.id || 'Pick';
+      const taskObj = TASK_CATALOG.find(t => t.id === taskId) || TASK_CATALOG[0];
+      const st = analytics.taskStats[taskObj.id];
+      const taskEmps = analytics.activeEmps.filter(e => e.task === taskObj.id);
+
+      eyebrow.textContent = `DRILL-DOWN TASK VỤ · VỊ TRÍ: ${taskObj.roles.join(' · ')}`;
+      title.textContent = `Chi tiết Vận hành Task ${taskObj.name} (${formatShortVNDate(appState.rangeStart)} – ${formatShortVNDate(appState.rangeEnd)})`;
+
+      kpis.innerHTML = `
+        <div class="drilldown-tile">
+          <div class="label-mono">Tổng số ngày làm (Tổng ca)</div>
+          <div class="kpi-value">${st.totalShifts} ca</div>
+          <div class="helper-text">Day QĐ: ${st.convDay} · Night QĐ: ${st.convNight}</div>
+        </div>
+        <div class="drilldown-tile">
+          <div class="label-mono">Tổng giờ vận hành Task</div>
+          <div class="kpi-value">${st.totalHours.toFixed(1)}h</div>
+          <div class="helper-text">${st.baseHours}h ca chuẩn + ${st.otHours.toFixed(1)}h OT</div>
+        </div>
+        <div class="drilldown-tile">
+          <div class="label-mono">Quy đổi Ca giữa (Mid)</div>
+          <div class="kpi-value">${st.rawMid} lượt Mid</div>
+          <div class="helper-text">Cộng +${st.midToDay} vào Day · +${st.midToNight} vào Night</div>
+        </div>
+        <div class="drilldown-tile">
+          <div class="label-mono">Nhân sự thuộc Task</div>
+          <div class="kpi-value">${taskEmps.length} NV</div>
+          <div class="helper-text">Click tên nhân viên bên dưới để xem lịch cá nhân</div>
+        </div>
+      `;
+
+      // Daily breakdown + Employee breakdown inside Task
+      let dailyRowsHtml = '';
+      analytics.dates.forEach(d => {
+        const td = st.daily[d];
+        dailyRowsHtml += `
+          <tr>
+            <td class="mono-num">${formatVNDate(d)} (${getVNWeekday(d)})</td>
+            <td class="num-col">${td.rawDay}</td>
+            <td class="num-col">${td.rawNight}</td>
+            <td class="num-col">${td.rawMid}</td>
+            <td class="num-col"><strong>${td.convDay}</strong></td>
+            <td class="num-col"><strong>${td.convNight}</strong></td>
+            <td class="num-col">${td.totalShifts}</td>
+            <td class="num-col">${td.baseHours}h</td>
+            <td class="num-col">${td.otHours.toFixed(1)}h</td>
+            <td class="num-col"><strong>${td.totalHours.toFixed(1)}h</strong></td>
+          </tr>
+        `;
+      });
+
+      let empRowsHtml = '';
+      taskEmps.forEach(emp => {
+        let eDays = 0, eBase = 0, eOt = 0;
+        analytics.dates.forEach(d => {
+          const rec = getRecord(d, emp.id);
+          const sDef = getShiftDef(rec.shiftCode);
+          if (sDef.group !== 'Off') {
+            eDays += 1;
+            eBase += Number(sDef.stdHours || 8);
+          }
+          eOt += Number(rec.otHours) || 0;
+        });
+        empRowsHtml += `
+          <tr>
+            <td class="mono-num">${emp.id}</td>
+            <td><button type="button" class="link-btn" onclick="drilldownEmployee('${emp.id}')">${emp.name}</button></td>
+            <td>${emp.role}</td>
+            <td class="num-col">${eDays}</td>
+            <td class="num-col">${eBase}h</td>
+            <td class="num-col">${eOt.toFixed(1)}h</td>
+            <td class="num-col"><strong>${(eBase + eOt).toFixed(1)}h</strong></td>
+          </tr>
+        `;
+      });
+
+      body.innerHTML = `
+        <div class="dash-two-col">
+          <div>
+            <h4 class="subhead" style="margin-bottom:var(--space-sm);">Chi tiết ca làm việc theo ngày — Task ${taskObj.name}</h4>
+            <div class="table-wrap" style="max-height:360px; overflow-y:auto;">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Ngày</th>
+                    <th class="num-col">D gốc</th>
+                    <th class="num-col">N gốc</th>
+                    <th class="num-col">Mid</th>
+                    <th class="num-col">Day QĐ</th>
+                    <th class="num-col">Night QĐ</th>
+                    <th class="num-col">Tổng ca</th>
+                    <th class="num-col">Giờ 8h</th>
+                    <th class="num-col">OT</th>
+                    <th class="num-col">Tổng VH</th>
+                  </tr>
+                </thead>
+                <tbody>${dailyRowsHtml}</tbody>
+              </table>
+            </div>
+          </div>
+          <div>
+            <h4 class="subhead" style="margin-bottom:var(--space-sm);">Nhân sự Task ${taskObj.name} (Click tên NV để Drill-down)</h4>
+            <div class="table-wrap" style="max-height:360px; overflow-y:auto;">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Mã NV</th>
+                    <th>Tên nhân viên</th>
+                    <th>Vị trí</th>
+                    <th class="num-col">Số ngày</th>
+                    <th class="num-col">Giờ 8h</th>
+                    <th class="num-col">Giờ OT</th>
+                    <th class="num-col">Tổng VH</th>
+                  </tr>
+                </thead>
+                <tbody>${empRowsHtml}</tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    // =========================================================================
+    // 7. TAB 2: SHIFT & OT EDITOR WITH TIME LOCK RULES
+    // =========================================================================
+    function renderScheduleEditor() {
+      const dateEl = document.getElementById('sched-date');
+      const taskEl = document.getElementById('sched-task-filter');
+      const searchEl = document.getElementById('sched-search');
+      const lockBanner = document.getElementById('sched-lock-banner');
+      const dateLbl = document.getElementById('mid-preview-date-lbl');
+      const midTag = document.getElementById('mid-total-summary-tag');
+      const convTbody = document.getElementById('sched-day-conversion-tbody');
+      const editorTbody = document.getElementById('sched-editor-tbody');
+
+      if (!dateEl || !convTbody || !editorTbody) return;
+      const d = dateEl.value || '2026-11-18';
+      appState.schedDate = d;
+      if (dateLbl) dateLbl.textContent = `${formatVNDate(d)} (${getVNWeekday(d)})`;
+
+      const sLock = isShiftLocked(d);
+      const oLock = isOtLocked(d);
+
+      if (lockBanner) {
+        lockBanner.className = 'notice-strip';
+        if (sLock.locked && oLock.locked) lockBanner.classList.add('is-error');
+        else if (sLock.locked || oLock.locked) lockBanner.classList.add('is-warning');
+        else lockBanner.classList.add('is-positive');
+
+        lockBanner.innerHTML = `
+          <span>
+            <strong>Ngày ${formatVNDate(d)}:</strong>
+            Phân ca ${sLock.locked ? '🔒 ĐÃ KHÓA' : '✅ ĐANG MỞ'} (hạn trước <span class="mono-num">${sLock.deadlineStr}</span>) ·
+            Chấm OT ${oLock.locked ? '🔒 ĐÃ KHÓA' : '✅ ĐANG MỞ'} (hạn đến <span class="mono-num">${oLock.deadlineStr}</span>)
+          </span>
+          <span class="label-mono">Quy tắc D-1 15:00 &amp; D+2 23:59:59</span>
+        `;
+      }
+
+      // Compute Mid-shift conversion for date d
+      const dayAnalytics = computeRangeAnalytics(d, d);
+      const obDay = dayAnalytics.ob;
+      if (midTag) {
+        midTag.textContent = `Toàn kho OB ngày ${formatShortVNDate(d)}: ${obDay.rawMid} Ca giữa → Day +${obDay.midToDay} · Night +${obDay.midToNight}`;
+      }
+
+      convTbody.innerHTML = '';
+      TASK_CATALOG.forEach(t => {
+        const st = dayAnalytics.taskStats[t.id];
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td><strong>${t.name}</strong></td>
+          <td class="num-col">${st.rawDay}</td>
+          <td class="num-col">${st.rawNight}</td>
+          <td class="num-col">${st.rawMid}</td>
+          <td class="num-col">+${st.midToDay}</td>
+          <td class="num-col">+${st.midToNight}</td>
+          <td class="num-col"><strong>${st.convDay}</strong></td>
+          <td class="num-col"><strong>${st.convNight}</strong></td>
+          <td class="num-col">${st.otHours.toFixed(1)}h</td>
+          <td class="num-col"><strong>${st.totalHours.toFixed(1)}h</strong></td>
+        `;
+        convTbody.appendChild(tr);
+      });
+
+      const trSum = document.createElement('tr');
+      trSum.style.fontWeight = '600';
+      trSum.innerHTML = `
+        <td>TỔNG KHO OB (Quy đổi tổng ${obDay.rawMid} Mid)</td>
+        <td class="num-col">${obDay.rawDay}</td>
+        <td class="num-col">${obDay.rawNight}</td>
+        <td class="num-col">${obDay.rawMid}</td>
+        <td class="num-col">+${obDay.midToDay}</td>
+        <td class="num-col">+${obDay.midToNight}</td>
+        <td class="num-col">${obDay.convDay}</td>
+        <td class="num-col">${obDay.convNight}</td>
+        <td class="num-col">${obDay.otHours.toFixed(1)}h</td>
+        <td class="num-col">${obDay.totalHours.toFixed(1)}h</td>
+      `;
+      convTbody.appendChild(trSum);
+
+      // Filter employees for editor table
+      const tFilter = taskEl ? taskEl.value : 'ALL';
+      const q = searchEl ? searchEl.value.trim().toLowerCase() : '';
+      const filteredEmps = appState.employees.filter(e => {
+        if (e.status !== 'Active') return false;
+        if (tFilter !== 'ALL' && e.task !== tFilter) return false;
+        if (q && !e.id.toLowerCase().includes(q) && !e.name.toLowerCase().includes(q) && !e.role.toLowerCase().includes(q)) return false;
+        return true;
+      });
+
+      editorTbody.innerHTML = '';
+      filteredEmps.forEach(emp => {
+        const rec = getRecord(d, emp.id);
+        const sDef = getShiftDef(rec.shiftCode);
+        const ot = Number(rec.otHours) || 0;
+        const stdHrs = sDef.group !== 'Off' ? Number(sDef.stdHours || 8) : 0;
+
+        const tr = document.createElement('tr');
+        const shiftOptions = appState.shifts.map(s =>
+          `<option value="${s.code}" ${s.code === rec.shiftCode ? 'selected' : ''}>${s.name} (${s.timeRange})</option>`
+        ).join('');
+
+        tr.innerHTML = `
+          <td class="mono-num">${emp.id}</td>
+          <td><button type="button" class="link-btn" onclick="drilldownEmployee('${emp.id}')">${emp.name}</button></td>
+          <td>${emp.task}</td>
+          <td>${emp.role}</td>
+          <td>
+            <select class="shift-select-inline" ${sLock.locked ? 'disabled' : ''} onchange="updateEmployeeShift('${d}', '${emp.id}', this.value)" aria-label="Ca làm việc cho ${emp.name}">
+              ${shiftOptions}
+            </select>
+          </td>
+          <td>
+            ${sLock.locked
+              ? `<span class="lock-pill">🔒 Khóa (&gt;${sLock.deadlineStr})</span>`
+              : `<span class="open-pill">Mở trước ${sLock.deadlineStr}</span>`}
+          </td>
+          <td class="num-col">
+            <input type="number" class="ot-input" min="0" max="12" step="0.5" value="${ot}" ${oLock.locked ? 'disabled' : ''} onchange="updateEmployeeOt('${d}', '${emp.id}', this.value)" aria-label="Giờ OT cho ${emp.name}">
+          </td>
+          <td>
+            ${oLock.locked
+              ? `<span class="lock-pill">🔒 Khóa (&gt;${oLock.deadlineStr})</span>`
+              : `<span class="open-pill">Mở đến ${oLock.deadlineStr}</span>`}
+          </td>
+          <td class="num-col"><strong>${(stdHrs + ot).toFixed(1)}h</strong></td>
+        `;
+        editorTbody.appendChild(tr);
+      });
+    }
+
+    function updateEmployeeShift(dateYmd, empId, shiftCode) {
+      const lock = isShiftLocked(dateYmd);
+      if (lock.locked) {
+        showToast(`Không thể sửa ca ngày ${formatVNDate(dateYmd)} vì đã quá hạn 15:00 ngày D-1 (${lock.deadlineStr}).`, 'error');
+        renderScheduleEditor();
+        return;
+      }
+      const key = `${dateYmd}|${empId}`;
+      const existing = appState.records[key] || { shiftCode: 'OFF', otHours: 0, note: '' };
+      appState.records[key] = { ...existing, shiftCode };
+      persistState();
+      renderScheduleEditor();
+      renderKpiStrip(computeRangeAnalytics(appState.rangeStart, appState.rangeEnd));
+      showToast(`Đã cập nhật ca ${shiftCode} cho ${empId} ngày ${formatVNDate(dateYmd)}.`, 'positive');
+    }
+
+    function updateEmployeeOt(dateYmd, empId, val) {
+      const lock = isOtLocked(dateYmd);
+      if (lock.locked) {
+        showToast(`Không thể sửa OT ngày ${formatVNDate(dateYmd)} vì đã quá hạn 23:59:59 ngày D+2 (${lock.deadlineStr}).`, 'error');
+        renderScheduleEditor();
+        return;
+      }
+      const num = Math.max(0, Math.min(12, Number(val) || 0));
+      const key = `${dateYmd}|${empId}`;
+      const existing = appState.records[key] || { shiftCode: 'OFF', otHours: 0, note: '' };
+      appState.records[key] = { ...existing, otHours: num };
+      persistState();
+      renderScheduleEditor();
+      renderKpiStrip(computeRangeAnalytics(appState.rangeStart, appState.rangeEnd));
+      showToast(`Đã cập nhật ${num}h OT cho ${empId} ngày ${formatVNDate(dateYmd)}.`, 'positive');
+    }
+
+    function copyPrevDayToSelected() {
+      const dateEl = document.getElementById('sched-date');
+      if (!dateEl) return;
+      const d = dateEl.value;
+      const lock = isShiftLocked(d);
+      if (lock.locked) {
+        showToast(`Ngày ${formatVNDate(d)} đã khóa phân ca (quá 15:00 ngày D-1), không thể sao chép.`, 'error');
+        return;
+      }
+      const dt = parseYMD(d);
+      if (!dt) return;
+      dt.setDate(dt.getDate() - 1);
+      const prevYmd = formatYMD(dt);
+
+      let copied = 0;
+      appState.employees.filter(e => e.status === 'Active').forEach(emp => {
+        const prevRec = getRecord(prevYmd, emp.id);
+        const curRec = getRecord(d, emp.id);
+        appState.records[`${d}|${emp.id}`] = {
+          shiftCode: prevRec.shiftCode,
+          otHours: curRec.otHours || 0,
+          note: curRec.note || ''
+        };
+        copied++;
+      });
+      persistState();
+      renderScheduleEditor();
+      showToast(`Đã sao chép phân ca từ ${formatVNDate(prevYmd)} sang ${formatVNDate(d)} cho ${copied} nhân sự.`, 'positive');
+    }
+
+    // =========================================================================
+    // 8. TAB 3: MONTHLY MATRIX SCHEDULE BY TASK & SHIFT (DAY / NIGHT TABLES)
+    // =========================================================================
+    function toggleScreenshotMode() {
+      appState.screenshotMode = !appState.screenshotMode;
+      const panel = document.getElementById('tab-panel-matrix');
+      const exitBar = document.getElementById('shot-exit-bar');
+      if (panel) panel.classList.toggle('is-screenshot-mode', appState.screenshotMode);
+      if (exitBar) exitBar.style.display = appState.screenshotMode ? 'flex' : 'none';
+    }
+
+    function assignDailyShiftBucket(taskId, dateYmd) {
+      // Returns map: empId -> 'Day' | 'Night' | 'Off' for that Task & Date, respecting Mid conversion:
+      // First Math.ceil(mid/2) Mid-shift workers go to Day table; remaining Math.floor(mid/2) go to Night table.
+      const taskEmps = appState.employees.filter(e => e.status === 'Active' && e.task === taskId);
+      const midEmps = [];
+      const bucket = {};
+
+      taskEmps.forEach(emp => {
+        const rec = getRecord(dateYmd, emp.id);
+        const sDef = getShiftDef(rec.shiftCode);
+        if (sDef.group === 'Day') bucket[emp.id] = 'Day';
+        else if (sDef.group === 'Night') bucket[emp.id] = 'Night';
+        else if (sDef.group === 'Mid') midEmps.push(emp.id);
+        else bucket[emp.id] = 'Off';
+      });
+
+      const dayQuota = Math.ceil(midEmps.length / 2);
+      midEmps.forEach((empId, idx) => {
+        bucket[empId] = idx < dayQuota ? 'Day' : 'Night';
+      });
+
+      return bucket;
+    }
+
+    function renderMonthlyMatrix() {
+      const monthEl = document.getElementById('matrix-month');
+      const fromEl = document.getElementById('matrix-day-from');
+      const toEl = document.getElementById('matrix-day-to');
+      const taskFilterEl = document.getElementById('matrix-task-filter');
+      const container = document.getElementById('matrix-tasks-container');
+      if (!monthEl || !fromEl || !toEl || !container) return;
+
+      const ym = monthEl.value || '2026-11';
+      const [yy, mm] = ym.split('-').map(Number);
+      const maxDayInMonth = new Date(yy, mm, 0).getDate();
+      const dFrom = Math.max(1, Math.min(maxDayInMonth, Number(fromEl.value) || 1));
+      const dTo = Math.max(dFrom, Math.min(maxDayInMonth, Number(toEl.value) || 21));
+
+      const dates = [];
+      for (let d = dFrom; d <= dTo; d++) {
+        dates.push(`${ym}-${String(d).padStart(2, '0')}`);
+      }
+
+      const tFilter = taskFilterEl ? taskFilterEl.value : 'ALL';
+      const tasksToRender = tFilter === 'ALL' ? TASK_CATALOG : TASK_CATALOG.filter(t => t.id === tFilter);
+
+      container.innerHTML = '';
+
+      tasksToRender.forEach(taskObj => {
+        const taskEmps = appState.employees.filter(e => e.status === 'Active' && e.task === taskObj.id);
+        if (taskEmps.length === 0) return;
+
+        // Precompute daily bucket assignments for Mid-shift allocation
+        const dailyBuckets = {};
+        dates.forEach(d => {
+          dailyBuckets[d] = assignDailyShiftBucket(taskObj.id, d);
+        });
+
+        const block = document.createElement('div');
+        block.className = 'matrix-task-block';
+
+        const headerRow = document.createElement('div');
+        headerRow.className = 'section-head';
+        headerRow.innerHTML = `
+          <div>
+            <h3 class="section-title">TASK ${taskObj.name.toUpperCase()} — LỊCH PHÂN CA THÁNG ${String(mm).padStart(2, '0')}/${yy}</h3>
+            <p class="helper-text">Vị trí: ${taskObj.roles.join(' · ')} | Khoảng ngày: ${String(dFrom).padStart(2, '0')}/${String(mm).padStart(2, '0')} – ${String(dTo).padStart(2, '0')}/${String(mm).padStart(2, '0')}</p>
+          </div>
+          <span class="label-mono hide-in-shot">2 Bảng: Ca Day &amp; Ca Night</span>
+        `;
+        block.appendChild(headerRow);
+
+        // Render 2 separate tables: DAY and NIGHT
+        ['Day', 'Night'].forEach(shiftSide => {
+          const card = document.createElement('div');
+          card.className = 'matrix-shift-card';
+
+          const isDay = shiftSide === 'Day';
+          const empsInTable = taskEmps.filter(emp =>
+            dates.some(d => dailyBuckets[d][emp.id] === shiftSide)
+          );
+
+          const head = document.createElement('div');
+          head.className = `matrix-shift-head ${isDay ? 'is-day' : 'is-night'}`;
+          head.innerHTML = `
+            <div>
+              <strong>${isDay ? 'BẢNG 1: CA DAY (CA NGÀY)' : 'BẢNG 2: CA NIGHT (CA ĐÊM)'} — TASK ${taskObj.name.toUpperCase()}</strong>
+              <span style="margin-left:8px; font-size:0.8rem; opacity:0.9;">(${empsInTable.length} nhân sự có lịch ${shiftSide} trong kỳ)</span>
+            </div>
+            <button type="button" class="btn btn-sm ${isDay ? 'btn-primary' : 'btn-secondary'} hide-in-shot" style="background:${isDay ? '' : 'var(--background)'};" onclick="downloadMatrixPng('${taskObj.id}', '${shiftSide}', '${ym}', ${dFrom}, ${dTo})">
+              Tải ảnh PNG bảng này
+            </button>
+          `;
+          card.appendChild(head);
+
+          const wrap = document.createElement('div');
+          wrap.className = 'table-wrap';
+          wrap.style.borderBottom = '0';
+
+          let thDates = dates.map(d => {
+            const wd = getVNWeekday(d);
+            const isWknd = wd === 'CN' || wd === 'T7';
+            return `<th class="${isWknd ? 'is-weekend' : ''}">${d.slice(8, 10)}<br><span style="font-weight:400;">${wd}</span></th>`;
+          }).join('');
+
+          let bodyRows = '';
+          if (empsInTable.length === 0) {
+            bodyRows = `<tr><td colspan="${dates.length + 4}" style="padding:16px; color:var(--on-surface-variant);">Không có nhân sự được phân vào bảng ${shiftSide} trong khoảng ngày này.</td></tr>`;
+          } else {
+            empsInTable.forEach(emp => {
+              let countInShift = 0;
+              let cells = '';
+              dates.forEach(d => {
+                const belongHere = dailyBuckets[d][emp.id] === shiftSide;
+                const rec = getRecord(d, emp.id);
+                const sDef = getShiftDef(rec.shiftCode);
+                if (belongHere && sDef.group !== 'Off') {
+                  countInShift++;
+                  const cls = sDef.group === 'Day' ? 'cell-day' : (sDef.group === 'Night' ? 'cell-night' : 'cell-mid');
+                  const otSpan = rec.otHours > 0 ? `<span class="cell-ot">+${rec.otHours}h</span>` : '';
+                  cells += `<td><span class="cell-code ${cls}" title="${sDef.name} (${sDef.timeRange})">${sDef.shortCode}${otSpan}</span></td>`;
+                } else {
+                  cells += `<td><span class="cell-code cell-off">·</span></td>`;
+                }
+              });
+              bodyRows += `
+                <tr>
+                  <td class="col-sticky mono-num">${emp.id}</td>
+                  <td class="col-sticky"><strong>${emp.name}</strong></td>
+                  <td class="col-sticky">${emp.role}</td>
+                  <td class="mono-num"><strong>${countInShift}</strong></td>
+                  ${cells}
+                </tr>
+              `;
+            });
+          }
+
+          // Footer daily headcount row
+          let footCells = dates.map(d => {
+            const cnt = taskEmps.filter(emp => dailyBuckets[d][emp.id] === shiftSide).length;
+            return `<td class="mono-num"><strong>${cnt}</strong></td>`;
+          }).join('');
+
+          wrap.innerHTML = `
+            <table class="matrix-table">
+              <thead>
+                <tr>
+                  <th class="col-sticky">Mã NV</th>
+                  <th class="col-sticky">Họ và Tên</th>
+                  <th class="col-sticky">Vị trí</th>
+                  <th>Công</th>
+                  ${thDates}
+                </tr>
+              </thead>
+              <tbody>
+                ${bodyRows}
+                <tr style="background:var(--surface-container); font-weight:600;">
+                  <td colspan="3" class="col-sticky">Tổng quân số ${shiftSide} (${taskObj.name})</td>
+                  <td class="mono-num">—</td>
+                  ${footCells}
+                </tr>
+              </tbody>
+            </table>
+          `;
+          card.appendChild(wrap);
+          block.appendChild(card);
+        });
+
+        container.appendChild(block);
+      });
+    }
+
+    function downloadMatrixPng(taskId, shiftSide, ym, dFrom, dTo) {
+      const [yy, mm] = ym.split('-').map(Number);
+      const dates = [];
+      for (let d = dFrom; d <= dTo; d++) {
+        dates.push(`${ym}-${String(d).padStart(2, '0')}`);
+      }
+      const taskEmps = appState.employees.filter(e => e.status === 'Active' && e.task === taskId);
+      const dailyBuckets = {};
+      dates.forEach(d => { dailyBuckets[d] = assignDailyShiftBucket(taskId, d); });
+      const empsInTable = taskEmps.filter(emp => dates.some(d => dailyBuckets[d][emp.id] === shiftSide));
+
+      const leftColsW = 290;
+      const cellW = 36;
+      const rowH = 30;
+      const headerH = 74;
+      const pad = 20;
+      const width = pad * 2 + leftColsW + dates.length * cellW;
+      const height = pad * 2 + headerH + (empsInTable.length + 2) * rowH;
+
+      const canvas = document.createElement('canvas');
+      const scale = 2;
+      canvas.width = width * scale;
+      canvas.height = height * scale;
+      const ctx = canvas.getContext('2d');
+      ctx.scale(scale, scale);
+
+      const bgCol = getThemeColor('--background');
+      const inkCol = getThemeColor('--on-surface');
+      const surfCol = getThemeColor('--surface-container');
+      const lineCol = getThemeColor('--outline-variant');
+      const primaryCol = getThemeColor('--primary');
+      const primarySoft = getThemeColor('--primary-container');
+      const nightBg = getThemeColor('--night-surface');
+      const nightInk = getThemeColor('--night-ink');
+      const midSoft = getThemeColor('--mid-container');
+      const midInk = getThemeColor('--data-2');
+      const errCol = getThemeColor('--error');
+
+      ctx.fillStyle = bgCol;
+      ctx.fillRect(0, 0, width, height);
+
+      // Banner
+      ctx.fillStyle = shiftSide === 'Day' ? primarySoft : nightBg;
+      ctx.fillRect(pad, pad, width - pad * 2, 42);
+      ctx.fillStyle = shiftSide === 'Day' ? inkCol : nightInk;
+      ctx.font = '600 14px "IBM Plex Sans", sans-serif';
+      ctx.fillText(`LICH PHAN CA ${shiftSide.toUpperCase()} - TASK ${taskId.toUpperCase()} (${String(mm).padStart(2, '0')}/${yy})`, pad + 12, pad + 26);
+
+      // Table Header
+      const y0 = pad + 46;
+      ctx.fillStyle = surfCol;
+      ctx.fillRect(pad, y0, width - pad * 2, rowH);
+      ctx.strokeStyle = lineCol;
+      ctx.strokeRect(pad, y0, width - pad * 2, rowH);
+
+      ctx.fillStyle = inkCol;
+      ctx.font = '600 11px "IBM Plex Sans", sans-serif';
+      ctx.fillText('Ma NV', pad + 8, y0 + 19);
+      ctx.fillText('Ho va Ten', pad + 72, y0 + 19);
+      ctx.fillText('Vi tri', pad + 200, y0 + 19);
+
+      dates.forEach((d, idx) => {
+        const cx = pad + leftColsW + idx * cellW;
+        ctx.strokeRect(cx, y0, cellW, rowH);
+        ctx.fillStyle = inkCol;
+        ctx.font = '600 10px "IBM Plex Mono", monospace';
+        ctx.fillText(d.slice(8, 10), cx + 10, y0 + 13);
+        ctx.font = '400 9px "IBM Plex Mono", monospace';
+        ctx.fillText(getVNWeekday(d), cx + 10, y0 + 25);
+      });
+
+      // Rows
+      empsInTable.forEach((emp, rIdx) => {
+        const ry = y0 + (rIdx + 1) * rowH;
+        ctx.fillStyle = rIdx % 2 === 1 ? surfCol : bgCol;
+        ctx.fillRect(pad, ry, width - pad * 2, rowH);
+        ctx.strokeStyle = lineCol;
+        ctx.strokeRect(pad, ry, width - pad * 2, rowH);
+
+        ctx.fillStyle = inkCol;
+        ctx.font = '400 11px "IBM Plex Mono", monospace';
+        ctx.fillText(emp.id, pad + 8, ry + 19);
+        ctx.font = '600 11px "IBM Plex Sans", sans-serif';
+        ctx.fillText(emp.name.slice(0, 18), pad + 72, ry + 19);
+        ctx.font = '400 10px "IBM Plex Sans", sans-serif';
+        ctx.fillText(emp.role.slice(0, 12), pad + 200, ry + 19);
+
+        dates.forEach((d, cIdx) => {
+          const cx = pad + leftColsW + cIdx * cellW;
+          const belong = dailyBuckets[d][emp.id] === shiftSide;
+          const rec = getRecord(d, emp.id);
+          const sDef = getShiftDef(rec.shiftCode);
+          ctx.strokeStyle = lineCol;
+          ctx.strokeRect(cx, ry, cellW, rowH);
+
+          if (belong && sDef.group !== 'Off') {
+            ctx.fillStyle = sDef.group === 'Day' ? primarySoft : (sDef.group === 'Night' ? nightBg : midSoft);
+            ctx.fillRect(cx + 2, ry + 2, cellW - 4, rowH - 4);
+            ctx.fillStyle = sDef.group === 'Day' ? inkCol : (sDef.group === 'Night' ? nightInk : midInk);
+            ctx.font = '600 10px "IBM Plex Mono", monospace';
+            ctx.fillText(sDef.shortCode, cx + 6, ry + 15);
+            if (rec.otHours > 0) {
+              ctx.fillStyle = errCol;
+              ctx.font = '600 9px "IBM Plex Mono", monospace';
+              ctx.fillText(`+${rec.otHours}h`, cx + 6, ry + 26);
+            }
+          }
+        });
+      });
+
+      // Footer total row
+      const fy = y0 + (empsInTable.length + 1) * rowH;
+      ctx.fillStyle = surfCol;
+      ctx.fillRect(pad, fy, width - pad * 2, rowH);
+      ctx.strokeStyle = primaryCol;
+      ctx.strokeRect(pad, fy, width - pad * 2, rowH);
+      ctx.fillStyle = inkCol;
+      ctx.font = '600 11px "IBM Plex Sans", sans-serif';
+      ctx.fillText(`Tong quan so ${shiftSide} (${taskId})`, pad + 8, fy + 19);
+
+      dates.forEach((d, cIdx) => {
+        const cx = pad + leftColsW + cIdx * cellW;
+        const cnt = taskEmps.filter(emp => dailyBuckets[d][emp.id] === shiftSide).length;
+        ctx.font = '600 11px "IBM Plex Mono", monospace';
+        ctx.fillText(String(cnt), cx + 12, fy + 19);
+      });
+
+      const filename = `lich_${taskId}_${shiftSide}_${ym}.png`;
+      const dataUrl = canvas.toDataURL('image/png');
+      const base64 = dataUrl.split(',')[1];
+      if (window.notebookAppApi && typeof window.notebookAppApi.triggerFileDownload === 'function') {
+        window.notebookAppApi.triggerFileDownload({
+          content: base64,
+          contentType: 'image/png',
+          encoding: 'base64',
+          filename
+        });
+      } else {
+        const link = document.createElement('a');
+        link.download = filename;
+        link.href = dataUrl;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      }
+      showToast(`Đã xuất ảnh lịch ${filename}.`, 'positive');
+    }
+
+    // =========================================================================
+    // 9. TAB 4: EMPLOYEE & SHIFT MASTER DATA CRUD
+    // =========================================================================
+    function renderMasterTab() {
+      const empBody = document.getElementById('emp-master-tbody');
+      if (empBody) {
+        empBody.innerHTML = '';
+        appState.employees.forEach(emp => {
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td class="mono-num">${emp.id}</td>
+            <td><button type="button" class="link-btn" onclick="drilldownEmployee('${emp.id}')">${emp.name}</button></td>
+            <td>${emp.task}</td>
+            <td>${emp.role}</td>
+            <td><span class="tag ${emp.status === 'Active' ? 'tag-ok' : 'tag-off'}">${emp.status}</span></td>
+            <td>
+              <button type="button" class="btn btn-ghost btn-sm" onclick="editEmployee('${emp.id}')">Sửa</button>
+            </td>
+          `;
+          empBody.appendChild(tr);
+        });
+      }
+
+      const shiftBody = document.getElementById('shift-master-tbody');
+      if (shiftBody) {
+        shiftBody.innerHTML = '';
+        appState.shifts.forEach(s => {
+          const grpCls = s.group === 'Day' ? 'tag-day' : (s.group === 'Night' ? 'tag-night' : (s.group === 'Mid' ? 'tag-mid' : 'tag-off'));
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td class="mono-num">${s.code}</td>
+            <td><strong>${s.name}</strong><br><span class="helper-text mono-num">${s.timeRange}</span></td>
+            <td class="mono-num">${s.shortCode}</td>
+            <td><span class="tag ${grpCls}">${s.group}</span></td>
+            <td class="num-col">${s.stdHours}h</td>
+            <td>
+              <button type="button" class="btn btn-ghost btn-sm" onclick="editShift('${s.code}')">Sửa</button>
+            </td>
+          `;
+          shiftBody.appendChild(tr);
+        });
+      }
+    }
+
+    function saveEmployeeForm(ev) {
+      if (ev) ev.preventDefault();
+      const modeEl = document.getElementById('emp-edit-mode');
+      const idEl = document.getElementById('emp-id-input');
+      const nameEl = document.getElementById('emp-name-input');
+      const taskEl = document.getElementById('emp-task-input');
+      const roleEl = document.getElementById('emp-role-input');
+      const statusEl = document.getElementById('emp-active-input');
+      if (!idEl || !nameEl || !taskEl || !roleEl || !statusEl) return false;
+
+      const empId = idEl.value.trim().toUpperCase();
+      const empName = nameEl.value.trim();
+      const empTask = taskEl.value;
+      const empRole = roleEl.value;
+      const empStatus = statusEl.value;
+      const editId = modeEl ? modeEl.value : '';
+
+      if (!empId || !empName) return false;
+
+      if (editId) {
+        const idx = appState.employees.findIndex(e => e.id === editId);
+        if (idx >= 0) {
+          appState.employees[idx] = { id: editId, name: empName, task: empTask, role: empRole, status: empStatus };
+        }
+        showToast(`Đã cập nhật nhân sự ${editId} – ${empName}.`, 'positive');
+      } else {
+        if (appState.employees.some(e => e.id === empId)) {
+          showToast(`Mã nhân viên ${empId} đã tồn tại. Vui lòng chọn mã khác hoặc nhấn Sửa.`, 'error');
+          return false;
+        }
+        appState.employees.push({ id: empId, name: empName, task: empTask, role: empRole, status: empStatus });
+        showToast(`Đã thêm nhân sự mới ${empId} – ${empName} (${empTask} / ${empRole}).`, 'positive');
+      }
+
+      cancelEmployeeEdit();
+      populateStaticSelectors();
+      persistState();
+      refreshAllViews();
+      return false;
+    }
+
+    function editEmployee(empId) {
+      const emp = appState.employees.find(e => e.id === empId);
+      if (!emp) return;
+      const modeEl = document.getElementById('emp-edit-mode');
+      const idEl = document.getElementById('emp-id-input');
+      const nameEl = document.getElementById('emp-name-input');
+      const taskEl = document.getElementById('emp-task-input');
+      const roleEl = document.getElementById('emp-role-input');
+      const statusEl = document.getElementById('emp-active-input');
+      const btn = document.getElementById('emp-submit-btn');
+      const cancelBtn = document.getElementById('emp-cancel-btn');
+
+      if (modeEl) modeEl.value = emp.id;
+      if (idEl) { idEl.value = emp.id; idEl.disabled = true; }
+      if (nameEl) nameEl.value = emp.name;
+      if (taskEl) { taskEl.value = emp.task; updateRoleOptionsForTask(); }
+      if (roleEl) roleEl.value = emp.role;
+      if (statusEl) statusEl.value = emp.status;
+      if (btn) btn.textContent = 'Lưu thay đổi';
+      if (cancelBtn) cancelBtn.style.display = 'inline-flex';
+    }
+
+    function cancelEmployeeEdit() {
+      const modeEl = document.getElementById('emp-edit-mode');
+      const idEl = document.getElementById('emp-id-input');
+      const nameEl = document.getElementById('emp-name-input');
+      const btn = document.getElementById('emp-submit-btn');
+      const cancelBtn = document.getElementById('emp-cancel-btn');
+      if (modeEl) modeEl.value = '';
+      if (idEl) { idEl.value = ''; idEl.disabled = false; }
+      if (nameEl) nameEl.value = '';
+      if (btn) btn.textContent = 'Thêm nhân sự';
+      if (cancelBtn) cancelBtn.style.display = 'none';
+    }
+
+    function saveShiftForm(ev) {
+      if (ev) ev.preventDefault();
+      const modeEl = document.getElementById('shift-edit-mode');
+      const codeEl = document.getElementById('shift-code-input');
+      const labelEl = document.getElementById('shift-label-input');
+      const shortEl = document.getElementById('shift-short-input');
+      const timeEl = document.getElementById('shift-time-input');
+      const groupEl = document.getElementById('shift-group-input');
+      const hrsEl = document.getElementById('shift-hours-input');
+      if (!codeEl || !labelEl || !shortEl || !timeEl || !groupEl || !hrsEl) return false;
+
+      const code = codeEl.value.trim().toUpperCase().replace(/\s+/g, '_');
+      const name = labelEl.value.trim();
+      const shortCode = shortEl.value.trim().toUpperCase();
+      const timeRange = timeEl.value.trim();
+      const group = groupEl.value;
+      const stdHours = Math.max(0, Number(hrsEl.value) || 0);
+      const editCode = modeEl ? modeEl.value : '';
+
+      if (!code || !name) return false;
+
+      if (editCode) {
+        const idx = appState.shifts.findIndex(s => s.code === editCode);
+        if (idx >= 0) {
+          appState.shifts[idx] = { code: editCode, name, shortCode, timeRange, group, stdHours };
+        }
+        showToast(`Đã cập nhật ca làm việc ${editCode} (${timeRange}).`, 'positive');
+      } else {
+        if (appState.shifts.some(s => s.code === code)) {
+          showToast(`Mã ca ${code} đã tồn tại.`, 'error');
+          return false;
+        }
+        appState.shifts.push({ code, name, shortCode, timeRange, group, stdHours });
+        showToast(`Đã thêm ca làm việc mới ${code}: ${name}.`, 'positive');
+      }
+
+      cancelShiftEdit();
+      persistState();
+      refreshAllViews();
+      return false;
+    }
+
+    function editShift(code) {
+      const s = appState.shifts.find(x => x.code === code);
+      if (!s) return;
+      const modeEl = document.getElementById('shift-edit-mode');
+      const codeEl = document.getElementById('shift-code-input');
+      const labelEl = document.getElementById('shift-label-input');
+      const shortEl = document.getElementById('shift-short-input');
+      const timeEl = document.getElementById('shift-time-input');
+      const groupEl = document.getElementById('shift-group-input');
+      const hrsEl = document.getElementById('shift-hours-input');
+      const btn = document.getElementById('shift-submit-btn');
+      const cancelBtn = document.getElementById('shift-cancel-btn');
+
+      if (modeEl) modeEl.value = s.code;
+      if (codeEl) { codeEl.value = s.code; codeEl.disabled = true; }
+      if (labelEl) labelEl.value = s.name;
+      if (shortEl) shortEl.value = s.shortCode;
+      if (timeEl) timeEl.value = s.timeRange;
+      if (groupEl) groupEl.value = s.group;
+      if (hrsEl) hrsEl.value = s.stdHours;
+      if (btn) btn.textContent = 'Lưu ca';
+      if (cancelBtn) cancelBtn.style.display = 'inline-flex';
+    }
+
+    function cancelShiftEdit() {
+      const modeEl = document.getElementById('shift-edit-mode');
+      const codeEl = document.getElementById('shift-code-input');
+      const labelEl = document.getElementById('shift-label-input');
+      const shortEl = document.getElementById('shift-short-input');
+      const timeEl = document.getElementById('shift-time-input');
+      const btn = document.getElementById('shift-submit-btn');
+      const cancelBtn = document.getElementById('shift-cancel-btn');
+      if (modeEl) modeEl.value = '';
+      if (codeEl) { codeEl.value = ''; codeEl.disabled = false; }
+      if (labelEl) labelEl.value = '';
+      if (shortEl) shortEl.value = '';
+      if (timeEl) timeEl.value = '';
+      if (btn) btn.textContent = 'Thêm ca';
+      if (cancelBtn) cancelBtn.style.display = 'none';
+    }
+
+    function handleResetDemoData(btn) {
+      if (btn.dataset.armed !== 'true') {
+        btn.dataset.armed = 'true';
+        btn.textContent = 'Nhấn lần nữa để xác nhận khôi phục';
+        setTimeout(() => {
+          btn.dataset.armed = 'false';
+          btn.textContent = 'Khôi phục dữ liệu mẫu';
+        }, 4000);
+        return;
+      }
+      btn.dataset.armed = 'false';
+      btn.textContent = 'Khôi phục dữ liệu mẫu';
+      appState.employees = JSON.parse(JSON.stringify(DEFAULT_EMPLOYEES));
+      appState.shifts = JSON.parse(JSON.stringify(DEFAULT_SHIFTS));
+      appState.records = buildSeedSchedule(DEFAULT_EMPLOYEES);
+      populateStaticSelectors();
+      persistState();
+      refreshAllViews();
+      showToast('Đã khôi phục toàn bộ dữ liệu mẫu Kho OB tháng 11/2026.', 'positive');
+    }
+
+    // =========================================================================
+    // 10. PURE-JS .XLSX GENERATOR & PARSER (VLOOKUP TEMPLATE)
+    // =========================================================================
+    function xmlEscape(str) {
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&apos;');
+    }
+
+    function colIndexToLetter(idx) {
+      let s = '';
+      let n = idx + 1;
+      while (n > 0) {
+        const rem = (n - 1) % 26;
+        s = String.fromCharCode(65 + rem) + s;
+        n = Math.floor((n - 1) / 26);
+      }
+      return s;
+    }
+
+    function letterToColIndex(letters) {
+      let n = 0;
+      for (let i = 0; i < letters.length; i++) {
+        n = n * 26 + (letters.charCodeAt(i) - 64);
+      }
+      return n - 1;
+    }
+
+    const CRC_TABLE = (() => {
+      const tbl = new Uint32Array(256);
+      for (let i = 0; i < 256; i++) {
+        let c = i;
+        for (let k = 0; k < 8; k++) {
+          c = (c & 1) ? (0xedb88320 ^ (c >>> 1)) : (c >>> 1);
+        }
+        tbl[i] = c >>> 0;
+      }
+      return tbl;
+    })();
+
+    function crc32(bytes) {
+      let crc = 0xffffffff;
+      for (let i = 0; i < bytes.length; i++) {
+        crc = CRC_TABLE[(crc ^ bytes[i]) & 0xff] ^ (crc >>> 8);
+      }
+      return (crc ^ 0xffffffff) >>> 0;
+    }
+
+    function buildZipUint8Array(entries) {
+      const encoder = new TextEncoder();
+      const localParts = [];
+      const centralParts = [];
+      let offset = 0;
+
+      entries.forEach(entry => {
+        const nameBytes = encoder.encode(entry.name);
+        const dataBytes = typeof entry.content === 'string' ? encoder.encode(entry.content) : entry.content;
+        const crc = crc32(dataBytes);
+        const size = dataBytes.length;
+
+        const lh = new Uint8Array(30 + nameBytes.length);
+        const lv = new DataView(lh.buffer);
+        lv.setUint32(0, 0x04034b50, true);
+        lv.setUint16(4, 20, true);
+        lv.setUint16(6, 0x0800, true); // UTF-8
+        lv.setUint16(8, 0, true);      // STORE
+        lv.setUint16(10, 0, true);
+        lv.setUint16(12, 0, true);
+        lv.setUint32(14, crc, true);
+        lv.setUint32(18, size, true);
+        lv.setUint32(22, size, true);
+        lv.setUint16(26, nameBytes.length, true);
+        lv.setUint16(28, 0, true);
+        lh.set(nameBytes, 30);
+
+        localParts.push(lh, dataBytes);
+
+        const ch = new Uint8Array(46 + nameBytes.length);
+        const cv = new DataView(ch.buffer);
+        cv.setUint32(0, 0x02014b50, true);
+        cv.setUint16(4, 20, true);
+        cv.setUint16(6, 20, true);
+        cv.setUint16(8, 0x0800, true);
+        cv.setUint16(10, 0, true);
+        cv.setUint16(12, 0, true);
+        cv.setUint16(14, 0, true);
+        cv.setUint32(16, crc, true);
+        cv.setUint32(20, size, true);
+        cv.setUint32(24, size, true);
+        cv.setUint16(28, nameBytes.length, true);
+        cv.setUint16(30, 0, true);
+        cv.setUint16(32, 0, true);
+        cv.setUint16(34, 0, true);
+        cv.setUint16(36, 0, true);
+        cv.setUint32(38, 0, true);
+        cv.setUint32(42, offset, true);
+        ch.set(nameBytes, 46);
+
+        centralParts.push(ch);
+        offset += lh.length + dataBytes.length;
+      });
+
+      const centralSize = centralParts.reduce((sum, p) => sum + p.length, 0);
+      const eocd = new Uint8Array(22);
+      const ev = new DataView(eocd.buffer);
+      ev.setUint32(0, 0x06054b50, true);
+      ev.setUint16(4, 0, true);
+      ev.setUint16(6, 0, true);
+      ev.setUint16(8, entries.length, true);
+      ev.setUint16(10, entries.length, true);
+      ev.setUint32(12, centralSize, true);
+      ev.setUint32(16, offset, true);
+      ev.setUint16(20, 0, true);
+
+      const totalLen = offset + centralSize + eocd.length;
+      const out = new Uint8Array(totalLen);
+      let pos = 0;
+      localParts.forEach(p => { out.set(p, pos); pos += p.length; });
+      centralParts.forEach(p => { out.set(p, pos); pos += p.length; });
+      out.set(eocd, pos);
+      return out;
+    }
+
+    function buildCellXml(rIdx, cIdx, val, styleIdx) {
+      const ref = `${colIndexToLetter(cIdx)}${rIdx + 1}`;
+      const sAttr = styleIdx ? ` s="${styleIdx}"` : '';
+      if (val && typeof val === 'object' && val.formula) {
+        const cached = val.cached !== undefined && val.cached !== null ? String(val.cached) : '';
+        return `<c r="${ref}"${sAttr} t="str"><f>${xmlEscape(val.formula)}</f><v>${xmlEscape(cached)}</v></c>`;
+      }
+      if (typeof val === 'number' && !isNaN(val)) {
+        return `<c r="${ref}"${sAttr}><v>${val}</v></c>`;
+      }
+      return `<c r="${ref}"${sAttr} t="inlineStr"><is><t>${xmlEscape(val === null || val === undefined ? '' : val)}</t></is></c>`;
+    }
+
+    function buildWorksheetXml(rows) {
+      let rowsXml = '';
+      rows.forEach((row, rIdx) => {
+        let cellsXml = '';
+        row.forEach((val, cIdx) => {
+          if (val !== undefined && val !== null && val !== '') {
+            cellsXml += buildCellXml(rIdx, cIdx, val, rIdx === 0 ? 1 : 0);
+          } else if (rIdx === 0) {
+            cellsXml += buildCellXml(rIdx, cIdx, '', 1);
+          }
+        });
+        rowsXml += `<row r="${rIdx + 1}">${cellsXml}</row>`;
+      });
+      return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>` +
+        `<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">` +
+        `<sheetViews><sheetView workbookViewId="0"><pane ySplit="1" topLeftCell="A2" activePane="bottomLeft" state="frozen"/></sheetView></sheetViews>` +
+        `<sheetFormatPr defaultRowHeight="20"/>` +
+        `<cols>` +
+        `<col min="1" max="1" width="14" customWidth="1"/>` +
+        `<col min="2" max="2" width="14" customWidth="1"/>` +
+        `<col min="3" max="3" width="24" customWidth="1"/>` +
+        `<col min="4" max="5" width="18" customWidth="1"/>` +
+        `<col min="6" max="8" width="16" customWidth="1"/>` +
+        `</cols>` +
+        `<sheetData>${rowsXml}</sheetData>` +
+        `</worksheet>`;
+    }
+
+    function downloadTemplateXlsx() {
+      // Sheet 1: Master Data
+      const masterRows = [
+        ['Mã NV', 'Tên NV', 'Task', 'Vị trí', 'Trạng thái']
+      ];
+      appState.employees.forEach(emp => {
+        masterRows.push([emp.id, emp.name, emp.task, emp.role, emp.status]);
+      });
+
+      // Sheet 2: Lịch Phân Ca with VLOOKUP formulas referencing 'Master Data'!$A$2:$E$500
+      const schedRows = [
+        ['Ngày (YYYY-MM-DD)', 'Mã NV', 'Tên NV (VLOOKUP)', 'Task (VLOOKUP)', 'Vị trí (VLOOKUP)', 'Mã Ca', 'Giờ OT', 'Ghi chú']
+      ];
+
+      const dates = getDatesInRange(appState.rangeStart, appState.rangeEnd);
+      const activeEmps = appState.employees.filter(e => e.status === 'Active');
+      let excelRow = 2;
+
+      dates.forEach(d => {
+        activeEmps.forEach(emp => {
+          const rec = getRecord(d, emp.id);
+          schedRows.push([
+            d,
+            emp.id,
+            { formula: `IFERROR(VLOOKUP(B${excelRow},'Master Data'!$A$2:$E$500,2,FALSE),"")`, cached: emp.name },
+            { formula: `IFERROR(VLOOKUP(B${excelRow},'Master Data'!$A$2:$E$500,3,FALSE),"")`, cached: emp.task },
+            { formula: `IFERROR(VLOOKUP(B${excelRow},'Master Data'!$A$2:$E$500,4,FALSE),"")`, cached: emp.role },
+            rec.shiftCode,
+            Number(rec.otHours || 0),
+            rec.note || ''
+          ]);
+          excelRow++;
+        });
+      });
+
+      // Add 30 extra ready-to-fill formula rows at the bottom
+      for (let extra = 0; extra < 30; extra++) {
+        schedRows.push([
+          '',
+          '',
+          { formula: `IFERROR(VLOOKUP(B${excelRow},'Master Data'!$A$2:$E$500,2,FALSE),"")`, cached: '' },
+          { formula: `IFERROR(VLOOKUP(B${excelRow},'Master Data'!$A$2:$E$500,3,FALSE),"")`, cached: '' },
+          { formula: `IFERROR(VLOOKUP(B${excelRow},'Master Data'!$A$2:$E$500,4,FALSE),"")`, cached: '' },
+          '',
+          0,
+          ''
+        ]);
+        excelRow++;
+      }
+
+      const contentTypesXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>` +
+        `<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">` +
+        `<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>` +
+        `<Default Extension="xml" ContentType="application/xml"/>` +
+        `<Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>` +
+        `<Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>` +
+        `<Override PartName="/xl/worksheets/sheet2.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>` +
+        `<Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>` +
+        `</Types>`;
+
+      const rootRelsXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>` +
+        `<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">` +
+        `<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/>` +
+        `</Relationships>`;
+
+      const workbookXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>` +
+        `<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">` +
+        `<sheets>` +
+        `<sheet name="Master Data" sheetId="1" r:id="rId1"/>` +
+        `<sheet name="Lịch Phân Ca" sheetId="2" r:id="rId2"/>` +
+        `</sheets>` +
+        `<calcPr calcId="191029" fullCalcOnLoad="1"/>` +
+        `</workbook>`;
+
+      const workbookRelsXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>` +
+        `<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">` +
+        `<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/>` +
+        `<Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet2.xml"/>` +
+        `<Relationship Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>` +
+        `</Relationships>`;
+
+      const stylesXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>` +
+        `<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">` +
+        `<fonts count="2"><font><sz val="11"/><name val="Calibri"/></font><font><b/><sz val="11"/><color rgb="FFFFFFFF"/><name val="Calibri"/></font></fonts>` +
+        `<fills count="3"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill><fill><patternFill patternType="solid"><fgColor rgb="FF0F62FE"/></patternFill></fill></fills>` +
+        `<borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders>` +
+        `<cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>` +
+        `<cellXfs count="2"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/><xf numFmtId="0" fontId="1" fillId="2" borderId="0" xfId="0" applyFont="1" applyFill="1"/></cellXfs>` +
+        `</styleSheet>`;
+
+      const sheet1Xml = buildWorksheetXml(masterRows);
+      const sheet2Xml = buildWorksheetXml(schedRows);
+
+      const zipBytes = buildZipUint8Array([
+        { name: '[Content_Types].xml', content: contentTypesXml },
+        { name: '_rels/.rels', content: rootRelsXml },
+        { name: 'xl/workbook.xml', content: workbookXml },
+        { name: 'xl/_rels/workbook.xml.rels', content: workbookRelsXml },
+        { name: 'xl/styles.xml', content: stylesXml },
+        { name: 'xl/worksheets/sheet1.xml', content: sheet1Xml },
+        { name: 'xl/worksheets/sheet2.xml', content: sheet2Xml }
+      ]);
+
+      const blob = new Blob([zipBytes], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'mau_phan_ca_kho_OB.xlsx';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      showToast('Đã tạo & tải xuống file mau_phan_ca_kho_OB.xlsx (gồm tab Master Data và Lịch Phân Ca có công thức VLOOKUP).', 'positive');
+    }
+
+    function exportSummaryCsv() {
+      const analytics = computeRangeAnalytics(appState.rangeStart, appState.rangeEnd);
+      const lines = ['Ngay,MaNV,TenNV,Task,ViTri,MaCa,TenCa,NhomQuyDoi,GioChuan,GioOT,TongGioVH'];
+      analytics.dates.forEach(d => {
+        analytics.activeEmps.forEach(emp => {
+          const rec = getRecord(d, emp.id);
+          const sDef = getShiftDef(rec.shiftCode);
+          const std = sDef.group !== 'Off' ? Number(sDef.stdHours || 8) : 0;
+          const ot = Number(rec.otHours || 0);
+          lines.push([
+            d,
+            emp.id,
+            `"${emp.name.replace(/"/g, '""')}"`,
+            emp.task,
+            `"${emp.role}"`,
+            rec.shiftCode,
+            `"${sDef.name}"`,
+            sDef.group,
+            std,
+            ot,
+            std + ot
+          ].join(','));
+        });
+      });
+      const csvContent = '\uFEFF' + lines.join('\n');
+      const filename = `bao_cao_phan_ca_OB_${appState.rangeStart}_${appState.rangeEnd}.csv`;
+      if (window.notebookAppApi && typeof window.notebookAppApi.triggerFileDownload === 'function') {
+        window.notebookAppApi.triggerFileDownload({
+          content: csvContent,
+          contentType: 'text/csv',
+          encoding: 'UTF-8',
+          filename
+        });
+      } else {
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+      }
+      showToast(`Đã xuất báo cáo CSV: ${filename}`, 'positive');
+    }
+
+    // Pure-JS ZIP extractor + XLSX XML parser
+    async function extractZipEntries(arrayBuffer) {
+      const bytes = new Uint8Array(arrayBuffer);
+      const dv = new DataView(arrayBuffer);
+      // Locate End of Central Directory (0x06054b50)
+      let eocdPos = -1;
+      for (let i = bytes.length - 22; i >= Math.max(0, bytes.length - 65557); i--) {
+        if (dv.getUint32(i, true) === 0x06054b50) {
+          eocdPos = i;
+          break;
+        }
+      }
+      if (eocdPos === -1) throw new Error('File không phải định dạng ZIP/XLSX hợp lệ.');
+
+      const totalEntries = dv.getUint16(eocdPos + 10, true);
+      const cdOffset = dv.getUint32(eocdPos + 16, true);
+      const decoder = new TextDecoder('utf-8');
+      const files = {};
+      let ptr = cdOffset;
+
+      for (let i = 0; i < totalEntries; i++) {
+        if (dv.getUint32(ptr, true) !== 0x02014b50) break;
+        const compression = dv.getUint16(ptr + 10, true);
+        const compSize = dv.getUint32(ptr + 20, true);
+        const nameLen = dv.getUint16(ptr + 28, true);
+        const extraLen = dv.getUint16(ptr + 30, true);
+        const commentLen = dv.getUint16(ptr + 32, true);
+        const localHeaderOffset = dv.getUint32(ptr + 42, true);
+        const name = decoder.decode(bytes.subarray(ptr + 46, ptr + 46 + nameLen));
+        ptr += 46 + nameLen + extraLen + commentLen;
+
+        const lhNameLen = dv.getUint16(localHeaderOffset + 26, true);
+        const lhExtraLen = dv.getUint16(localHeaderOffset + 28, true);
+        const dataStart = localHeaderOffset + 30 + lhNameLen + lhExtraLen;
+        const rawSlice = bytes.subarray(dataStart, dataStart + compSize);
+
+        if (compression === 0) {
+          files[name] = rawSlice;
+        } else if (compression === 8) {
+          if (typeof DecompressionStream === 'undefined') {
+            throw new Error('Trình duyệt không hỗ trợ giải nén deflate-raw.');
+          }
+          const ds = new DecompressionStream('deflate-raw');
+          const decompressed = await new Response(new Blob([rawSlice]).stream().pipeThrough(ds)).arrayBuffer();
+          files[name] = new Uint8Array(decompressed);
+        }
+      }
+      return files;
+    }
+
+    function normalizeExcelDate(val) {
+      if (val === null || val === undefined || val === '') return '';
+      if (typeof val === 'number' || /^\d{5}(\.\d+)?$/.test(String(val).trim())) {
+        const serial = Number(val);
+        if (serial > 30000 && serial < 70000) {
+          const utc = Date.UTC(1899, 11, 30) + Math.round(serial) * 86400000;
+          const dt = new Date(utc);
+          return `${dt.getUTCFullYear()}-${String(dt.getUTCMonth() + 1).padStart(2, '0')}-${String(dt.getUTCDate()).padStart(2, '0')}`;
+        }
+      }
+      const s = String(val).trim();
+      if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+      const dmy = s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
+      if (dmy) {
+        return `${dmy[3]}-${dmy[2].padStart(2, '0')}-${dmy[1].padStart(2, '0')}`;
+      }
+      return '';
+    }
+
+    function parseWorksheetRows(xmlStr, sharedStrings) {
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(xmlStr, 'application/xml');
+      const rowNodes = Array.from(doc.getElementsByTagName('row'));
+      const rows = [];
+      rowNodes.forEach(rNode => {
+        const rowArr = [];
+        const cells = Array.from(rNode.getElementsByTagName('c'));
+        cells.forEach(cNode => {
+          const ref = cNode.getAttribute('r') || '';
+          const colMatch = ref.match(/^([A-Z]+)/i);
+          const cIdx = colMatch ? letterToColIndex(colMatch[1].toUpperCase()) : rowArr.length;
+          const t = cNode.getAttribute('t') || 'n';
+          let val = '';
+
+          if (t === 'inlineStr') {
+            const tNode = cNode.getElementsByTagName('t')[0];
+            val = tNode ? tNode.textContent : '';
+          } else {
+            const vNode = cNode.getElementsByTagName('v')[0];
+            const raw = vNode ? vNode.textContent : '';
+            if (t === 's') {
+              val = sharedStrings[Number(raw)] !== undefined ? sharedStrings[Number(raw)] : '';
+            } else if (t === 'str' || t === 'b' || t === 'e') {
+              val = raw;
+            } else {
+              val = raw !== '' && !isNaN(Number(raw)) ? Number(raw) : raw;
+            }
+          }
+          rowArr[cIdx] = val;
+        });
+        rows.push(rowArr);
+      });
+      return rows;
+    }
+
+    async function handleExcelUpload(inputEl) {
+      const fb = document.getElementById('excel-upload-feedback');
+      const respectLockEl = document.getElementById('excel-respect-lock');
+      const strictLock = respectLockEl ? respectLockEl.value === 'strict' : true;
+      const file = inputEl && inputEl.files ? inputEl.files[0] : null;
+      if (!file) return;
+
+      try {
+        const buf = await file.arrayBuffer();
+        const bytes = new Uint8Array(buf);
+        let masterUpdated = 0;
+        let schedUpdated = 0;
+        let skippedLocked = 0;
+
+        if (file.name.toLowerCase().endsWith('.csv')) {
+          const text = new TextDecoder('utf-8').decode(bytes).replace(/^\uFEFF/, '');
+          const lines = text.split(/\r?\n/).filter(l => l.trim());
+          for (let i = 1; i < lines.length; i++) {
+            const cols = lines[i].split(',').map(c => c.replace(/^"|"$/g, '').trim());
+            const dateYmd = normalizeExcelDate(cols[0]);
+            const empId = (cols[1] || '').toUpperCase();
+            const shiftCode = (cols[5] || cols[2] || '').toUpperCase();
+            const otHours = Number(cols[9] !== undefined ? cols[9] : cols[6]) || 0;
+            if (!dateYmd || !empId || !shiftCode) continue;
+
+            const sLock = isShiftLocked(dateYmd);
+            const oLock = isOtLocked(dateYmd);
+            const cur = getRecord(dateYmd, empId);
+            const nextShift = (strictLock && sLock.locked) ? cur.shiftCode : shiftCode;
+            const nextOt = (strictLock && oLock.locked) ? cur.otHours : otHours;
+            if (strictLock && sLock.locked && oLock.locked) {
+              skippedLocked++;
+            } else {
+              appState.records[`${dateYmd}|${empId}`] = { shiftCode: nextShift, otHours: nextOt, note: 'Import CSV' };
+              schedUpdated++;
+            }
+          }
+        } else {
+          const files = await extractZipEntries(buf);
+          const decoder = new TextDecoder('utf-8');
+          const parser = new DOMParser();
+
+          // Shared Strings
+          const sharedStrings = [];
+          if (files['xl/sharedStrings.xml']) {
+            const ssDoc = parser.parseFromString(decoder.decode(files['xl/sharedStrings.xml']), 'application/xml');
+            Array.from(ssDoc.getElementsByTagName('si')).forEach(si => {
+              const tParts = Array.from(si.getElementsByTagName('t')).map(t => t.textContent || '');
+              sharedStrings.push(tParts.join(''));
+            });
+          }
+
+          // Workbook & Rels mapping
+          const sheetFiles = {};
+          if (files['xl/workbook.xml'] && files['xl/_rels/workbook.xml.rels']) {
+            const wbDoc = parser.parseFromString(decoder.decode(files['xl/workbook.xml']), 'application/xml');
+            const relDoc = parser.parseFromString(decoder.decode(files['xl/_rels/workbook.xml.rels']), 'application/xml');
+            const relMap = {};
+            Array.from(relDoc.getElementsByTagName('Relationship')).forEach(r => {
+              relMap[r.getAttribute('Id')] = r.getAttribute('Target');
+            });
+            Array.from(wbDoc.getElementsByTagName('sheet')).forEach(s => {
+              const sName = (s.getAttribute('name') || '').trim();
+              const rId = s.getAttribute('r:id');
+              const target = relMap[rId];
+              if (target) {
+                const fullPath = target.startsWith('xl/') ? target : `xl/${target.replace(/^\//, '')}`;
+                sheetFiles[sName] = fullPath;
+              }
+            });
+          }
+
+          const masterPath = sheetFiles['Master Data'] || 'xl/worksheets/sheet1.xml';
+          const schedPath = sheetFiles['Lịch Phân Ca'] || 'xl/worksheets/sheet2.xml';
+
+          // Parse Master Data
+          if (files[masterPath]) {
+            const mRows = parseWorksheetRows(decoder.decode(files[masterPath]), sharedStrings);
+            for (let i = 1; i < mRows.length; i++) {
+              const r = mRows[i];
+              const empId = String(r[0] || '').trim().toUpperCase();
+              const empName = String(r[1] || '').trim();
+              const empTask = String(r[2] || '').trim();
+              const empRole = String(r[3] || '').trim();
+              const empStatus = String(r[4] || 'Active').trim();
+              if (!empId || !empName) continue;
+              const validTask = TASK_CATALOG.find(t => t.id.toLowerCase() === empTask.toLowerCase());
+              const finalTask = validTask ? validTask.id : 'Pick';
+              const idx = appState.employees.findIndex(e => e.id === empId);
+              const obj = { id: empId, name: empName, task: finalTask, role: empRole || 'Picker FTE', status: empStatus === 'Inactive' ? 'Inactive' : 'Active' };
+              if (idx >= 0) appState.employees[idx] = obj;
+              else appState.employees.push(obj);
+              masterUpdated++;
+            }
+          }
+
+          // Parse Lịch Phân Ca (Auto VLOOKUP by Mã NV against appState.employees)
+          if (files[schedPath]) {
+            const sRows = parseWorksheetRows(decoder.decode(files[schedPath]), sharedStrings);
+            for (let i = 1; i < sRows.length; i++) {
+              const r = sRows[i];
+              const dateYmd = normalizeExcelDate(r[0]);
+              const empId = String(r[1] || '').trim().toUpperCase();
+              const shiftCode = String(r[5] || '').trim().toUpperCase();
+              const otHours = Math.max(0, Number(r[6]) || 0);
+              const note = String(r[7] || '').trim();
+              if (!dateYmd || !empId || !shiftCode) continue;
+
+              // VLOOKUP verification: Ensure Mã NV exists in Master Data
+              const masterEmp = appState.employees.find(e => e.id === empId);
+              if (!masterEmp) continue;
+
+              const sLock = isShiftLocked(dateYmd);
+              const oLock = isOtLocked(dateYmd);
+              const cur = getRecord(dateYmd, empId);
+
+              if (strictLock && sLock.locked && oLock.locked) {
+                skippedLocked++;
+                continue;
+              }
+
+              appState.records[`${dateYmd}|${empId}`] = {
+                shiftCode: (strictLock && sLock.locked) ? cur.shiftCode : shiftCode,
+                otHours: (strictLock && oLock.locked) ? cur.otHours : otHours,
+                note
+              };
+              schedUpdated++;
+            }
+          }
+        }
+
+        populateStaticSelectors();
+        persistState();
+        refreshAllViews();
+
+        if (fb) {
+          fb.style.display = 'flex';
+          fb.className = 'notice-strip is-positive';
+          fb.innerHTML = `
+            <span>
+              <strong>Import thành công (${file.name}):</strong>
+              Master Data cập nhật ${masterUpdated} NV · Lịch phân ca cập nhật ${schedUpdated} dòng (đã VLOOKUP theo Mã NV)
+              ${skippedLocked > 0 ? `· Bỏ qua ${skippedLocked} dòng bị khóa theo luật D-1 / D+2` : ''}.
+            </span>
+          `;
+        }
+        showToast(`Đã import ${schedUpdated} dòng lịch & ${masterUpdated} nhân sự từ ${file.name}.`, 'positive');
+      } catch (err) {
+        if (fb) {
+          fb.style.display = 'flex';
+          fb.className = 'notice-strip is-error';
+          fb.textContent = `Lỗi đọc file: ${err && err.message ? err.message : 'Định dạng không hợp lệ'}. Vui lòng tải file mẫu mau_phan_ca_kho_OB.xlsx và thử lại.`;
+        }
+        showToast('Import file Excel thất bại. Kiểm tra định dạng file.', 'error');
+      } finally {
+        inputEl.value = '';
+      }
+    }
+
+    // =========================================================================
+    // 11. BOOTSTRAP & REFRESH
+    // =========================================================================
+    function refreshAllViews() {
+      const analytics = computeRangeAnalytics(appState.rangeStart, appState.rangeEnd);
+      renderKpiStrip(analytics);
+      if (appState.activeTab === 'dashboard') renderDashboard();
+      if (appState.activeTab === 'schedule') renderScheduleEditor();
+      if (appState.activeTab === 'matrix') renderMonthlyMatrix();
+      if (appState.activeTab === 'master') renderMasterTab();
+    }
+
+    async function initApp() {
+      if (window.notebookAppApi && typeof window.notebookAppApi.getAppState === 'function') {
+        try {
+          const saved = await window.notebookAppApi.getAppState();
+          if (saved && typeof saved === 'object') {
+            if (Array.isArray(saved.employees) && saved.employees.length > 0) appState.employees = saved.employees;
+            if (Array.isArray(saved.shifts) && saved.shifts.length > 0) appState.shifts = saved.shifts;
+            if (saved.records && typeof saved.records === 'object') appState.records = saved.records;
+            if (saved.rangeStart) appState.rangeStart = saved.rangeStart;
+            if (saved.rangeEnd) appState.rangeEnd = saved.rangeEnd;
+            if (saved.simClock) appState.simClock = saved.simClock;
+            if (saved.schedDate) appState.schedDate = saved.schedDate;
+            if (saved.drilldown) appState.drilldown = saved.drilldown;
+            if (saved.activeTab) appState.activeTab = saved.activeTab;
+          }
+        } catch (e) {
+          // Use defaults
+        }
+      }
+
+      const rs = document.getElementById('range-start');
+      const re = document.getElementById('range-end');
+      const sc = document.getElementById('sim-clock');
+      const sd = document.getElementById('sched-date');
+      if (rs) rs.value = appState.rangeStart;
+      if (re) re.value = appState.rangeEnd;
+      if (sc) sc.value = appState.simClock;
+      if (sd) sd.value = appState.schedDate;
+
+      updateClockBadge();
+      populateStaticSelectors();
+      switchTab(appState.activeTab || 'dashboard');
+
+      if (typeof lucide !== 'undefined' && typeof lucide.createIcons === 'function') {
+        lucide.createIcons();
+      }
+      if (window.notebookAppApi && typeof window.notebookAppApi.notifyAppReady === 'function') {
+        window.notebookAppApi.notifyAppReady();
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', initApp);
+  </script>
+</body>
+</html>

@@ -1,0 +1,6 @@
+{
+  "name": "Quản lý Phân ca & Báo cáo Vận hành Kho Outbound (OB)",
+  "description": "Hệ thống điều phối 6 công đoạn chuẩn SOP kho Outbound (Pick, Check, Pack, Dispatch, TBS, NVL), quy đổi ca giữa, khóa lịch D-1 15:00, chốt OT D+2 23:59 và đồng bộ Excel VLOOKUP.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
