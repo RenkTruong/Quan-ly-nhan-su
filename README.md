@@ -28,6 +28,10 @@ Build production:
 npm run build
 ```
 
+## Triển khai GitHub Pages
+
+Workflow `.github/workflows/deploy.yml` tự build và deploy khi có commit lên nhánh `main` hoặc được chạy thủ công trong tab Actions. Trong **Settings → Pages**, đặt **Build and deployment → Source** thành **GitHub Actions**. Vite sẽ tự dùng đường dẫn `/Quan-ly-nhan-su/` khi build trên GitHub Actions.
+
 ## Hướng dẫn Push lên GitHub
 
 ```bash
