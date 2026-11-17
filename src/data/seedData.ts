@@ -103,6 +103,7 @@ export function buildSeedSchedule(employees: Employee[]): Record<string, Schedul
       records[`${dStr}|${emp.id}`] = {
         shiftCode,
         otHours,
+        role: emp.role,
         note: isPeak && otHours > 0 ? 'Cao điểm' : '',
       };
     });

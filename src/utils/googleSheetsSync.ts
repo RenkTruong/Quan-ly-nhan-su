@@ -160,7 +160,7 @@ function buildScheduleRows(
         emp.id,
         `=IFERROR(VLOOKUP(B${rowNum},'${SHEET_TAB_MASTER}'!$A$2:$E$500,2,FALSE),"")`,
         emp.dept,
-        emp.role,
+        rec.role || emp.role,
         sDef.name,
         sDef.timeRange,
         Number(rec.otHours || 0),
@@ -672,7 +672,7 @@ export async function syncFromGoogleSheet(params: {
 
         if (!dateYmd || !empId) continue;
 
-        // Ensure employee exists or update dept/role if edited via Dropdown
+        // Schedule rows can introduce an employee or update their task.
         let empIdx = nextEmployees.findIndex((e) => e.id === empId);
         const validDept = DEPT_CATALOG.find((d) => d.id.toLowerCase() === deptCell.toLowerCase());
 
@@ -693,18 +693,8 @@ export async function syncFromGoogleSheet(params: {
           }
         } else {
           const curEmp = nextEmployees[empIdx];
-          let empChanged = false;
-          const updatedEmp = { ...curEmp };
           if (validDept && validDept.id !== curEmp.dept) {
-            updatedEmp.dept = validDept.id;
-            empChanged = true;
-          }
-          if (roleCell && roleCell !== curEmp.role) {
-            updatedEmp.role = roleCell;
-            empChanged = true;
-          }
-          if (empChanged) {
-            nextEmployees[empIdx] = updatedEmp;
+            nextEmployees[empIdx] = { ...curEmp, dept: validDept.id };
             masterUpdated++;
           }
         }
@@ -727,12 +717,18 @@ export async function syncFromGoogleSheet(params: {
 
         const sLock = isShiftLocked(dateYmd, simClock);
         const oLock = isOtLocked(dateYmd, simClock);
+        const effectiveRole = curRec.role || nextEmployees[empIdx].role;
+        const nextRole = strictLock && sLock.locked ? effectiveRole : roleCell || effectiveRole;
 
         const nextShiftCode = strictLock && sLock.locked ? curRec.shiftCode : resolvedShift.code;
         const nextOtHours = strictLock && oLock.locked ? curRec.otHours : otVal;
 
         if (strictLock && sLock.locked && oLock.locked) {
-          if (curRec.shiftCode !== resolvedShift.code || curRec.otHours !== otVal) {
+          if (
+            curRec.shiftCode !== resolvedShift.code ||
+            curRec.otHours !== otVal ||
+            (roleCell && roleCell !== effectiveRole)
+          ) {
             skippedLocked++;
           }
           continue;
@@ -741,11 +737,13 @@ export async function syncFromGoogleSheet(params: {
         const changed =
           curRec.shiftCode !== nextShiftCode ||
           curRec.otHours !== nextOtHours ||
+          curRec.role !== nextRole ||
           (noteCell && curRec.note !== noteCell);
 
         nextRecords[`${dateYmd}|${empId}`] = {
           shiftCode: nextShiftCode,
           otHours: nextOtHours,
+          role: nextRole,
           note: noteCell || curRec.note || '',
         };
 

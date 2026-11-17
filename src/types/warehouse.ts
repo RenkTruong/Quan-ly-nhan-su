@@ -33,6 +33,7 @@ export interface Employee {
 export interface ScheduleRecord {
   shiftCode: string;
   otHours: number;
+  role?: string;
   note?: string;
 }
 

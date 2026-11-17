@@ -285,6 +285,31 @@ export default function App() {
     showToast(`Đã cập nhật ${clamped}h OT cho ${empId} ngày ${formatVNDate(dateYmd)}.`, 'positive');
   };
 
+  const handleUpdateRole = (dateYmd: string, empId: string, role: string) => {
+    const lock = isShiftLocked(dateYmd, liveClock);
+    if (lock.locked) {
+      showToast(lock.message, 'error');
+      return;
+    }
+    const normalizedRole = role.trim();
+    if (!normalizedRole) {
+      showToast('Vị trí không được để trống.', 'warning');
+      return;
+    }
+    setState((prev) => {
+      const key = `${dateYmd}|${empId}`;
+      const existing = prev.records[key] || { shiftCode: 'OFF', otHours: 0, note: '' };
+      return {
+        ...prev,
+        records: {
+          ...prev.records,
+          [key]: { ...existing, role: normalizedRole },
+        },
+      };
+    });
+    showToast(`Đã cập nhật vị trí ${normalizedRole} cho ${empId} ngày ${formatVNDate(dateYmd)}.`, 'positive');
+  };
+
   const handleCopyPrevDay = (dateYmd: string) => {
     const lock = isShiftLocked(dateYmd, liveClock);
     if (lock.locked) {
@@ -307,6 +332,7 @@ export default function App() {
           nextRecords[`${dateYmd}|${emp.id}`] = {
             shiftCode: prevRec.shiftCode,
             otHours: curRec.otHours || 0,
+            role: prevRec.role || emp.role,
             note: curRec.note || '',
           };
           copied++;
@@ -651,6 +677,7 @@ export default function App() {
           onChangeSchedDate={(dateYmd) => setState((prev) => ({ ...prev, schedDate: dateYmd }))}
           onUpdateShift={handleUpdateShift}
           onUpdateOt={handleUpdateOt}
+          onUpdateRole={handleUpdateRole}
           onCopyPrevDay={handleCopyPrevDay}
           onSelectEmployee={handleSelectEmployee}
         />

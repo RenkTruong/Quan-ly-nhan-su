@@ -205,7 +205,7 @@ export function downloadTemplateXlsx(
       'Mã NV',
       'Tên NV (VLOOKUP)',
       'Task (VLOOKUP)',
-      'Vị trí (VLOOKUP)',
+      'Vị trí',
       'Mã Ca',
       'Giờ OT',
       'Ghi chú',
@@ -224,7 +224,7 @@ export function downloadTemplateXlsx(
         emp.id,
         { formula: `IFERROR(VLOOKUP(B${excelRow},'Master Data'!$A$2:$E$500,2,FALSE),"")`, cached: emp.name },
         { formula: `IFERROR(VLOOKUP(B${excelRow},'Master Data'!$A$2:$E$500,3,FALSE),"")`, cached: emp.dept },
-        { formula: `IFERROR(VLOOKUP(B${excelRow},'Master Data'!$A$2:$E$500,4,FALSE),"")`, cached: emp.role },
+        rec.role || emp.role,
         rec.shiftCode,
         Number(rec.otHours || 0),
         rec.note || '',
@@ -336,7 +336,7 @@ export function exportSummaryCsv(
           emp.id,
           `"${emp.name.replace(/"/g, '""')}"`,
           emp.dept,
-          `"${emp.role}"`,
+          `"${(rec.role || emp.role).replace(/"/g, '""')}"`,
           rec.shiftCode,
           `"${sDef.name}"`,
           formatShiftGroupLabel(sDef.group),
@@ -506,10 +506,18 @@ export async function parseAndImportScheduleFile(params: {
       const cur = getRecord(nextRecords, dateYmd, empId);
       const nextShift = strictLock && sLock.locked ? cur.shiftCode : shiftCode;
       const nextOt = strictLock && oLock.locked ? cur.otHours : otHours;
+      const employeeRole = params.employees.find((emp) => emp.id === empId)?.role || '';
+      const importedRole = (cols[4] || '').trim();
+      const nextRole = strictLock && sLock.locked ? cur.role || employeeRole : importedRole || cur.role || employeeRole;
       if (strictLock && sLock.locked && oLock.locked) {
         skippedLocked++;
       } else {
-        nextRecords[`${dateYmd}|${empId}`] = { shiftCode: nextShift, otHours: nextOt, note: 'Import CSV' };
+        nextRecords[`${dateYmd}|${empId}`] = {
+          shiftCode: nextShift,
+          otHours: nextOt,
+          role: nextRole,
+          note: 'Import CSV',
+        };
         schedUpdated++;
       }
     }
@@ -584,6 +592,7 @@ export async function parseAndImportScheduleFile(params: {
         const empId = String(r[1] || '').trim().toUpperCase();
         const shiftCode = String(r[5] || '').trim().toUpperCase();
         const otHours = Math.max(0, Number(r[6]) || 0);
+        const role = String(r[4] || '').trim();
         const note = String(r[7] || '').trim();
         if (!dateYmd || !empId || !shiftCode) continue;
 
@@ -602,6 +611,7 @@ export async function parseAndImportScheduleFile(params: {
         nextRecords[`${dateYmd}|${empId}`] = {
           shiftCode: strictLock && sLock.locked ? cur.shiftCode : shiftCode,
           otHours: strictLock && oLock.locked ? cur.otHours : otHours,
+          role: strictLock && sLock.locked ? cur.role || masterEmp.role : role || cur.role || masterEmp.role,
           note,
         };
         schedUpdated++;

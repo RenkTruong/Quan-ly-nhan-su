@@ -24,6 +24,7 @@ interface ScheduleEditorTabProps {
   onChangeSchedDate: (dateYmd: string) => void;
   onUpdateShift: (dateYmd: string, empId: string, shiftCode: string) => void;
   onUpdateOt: (dateYmd: string, empId: string, otHours: number) => void;
+  onUpdateRole: (dateYmd: string, empId: string, role: string) => void;
   onCopyPrevDay: (dateYmd: string) => void;
   onSelectEmployee: (empId: string) => void;
 }
@@ -37,11 +38,13 @@ export function ScheduleEditorTab({
   onChangeSchedDate,
   onUpdateShift,
   onUpdateOt,
+  onUpdateRole,
   onCopyPrevDay,
   onSelectEmployee,
 }: ScheduleEditorTabProps) {
   const [deptFilter, setDeptFilter] = useState<'ALL' | DepartmentId>('ALL');
   const [searchQuery, setSearchQuery] = useState('');
+  const allPositions = useMemo(() => Array.from(new Set(DEPT_CATALOG.flatMap((dept) => dept.roles))), []);
 
   const sLock = useMemo(() => isShiftLocked(schedDate, simClock), [schedDate, simClock]);
   const oLock = useMemo(() => isOtLocked(schedDate, simClock), [schedDate, simClock]);
@@ -244,8 +247,7 @@ export function ScheduleEditorTab({
                       {emp.id} ·{' '}
                       <span className="font-semibold" style={{ color: getDeptColor(emp.dept) }}>
                         {emp.dept}
-                      </span>{' '}
-                      · {emp.role}
+                      </span>
                     </div>
                   </div>
                   <div className="shrink-0 text-right">
@@ -317,6 +319,37 @@ export function ScheduleEditorTab({
                     />
                   </div>
                 </div>
+
+                <div className="flex flex-col gap-1">
+                  <label
+                    htmlFor={`mob-position-${emp.id}`}
+                    className="flex items-center justify-between text-[11px] font-medium text-[#525252]"
+                  >
+                    <span>Vị trí trong ngày</span>
+                    {sLock.locked && (
+                      <span className="font-mono-num inline-flex items-center gap-0.5 text-[10px] text-[#da1e28]">
+                        <Lock className="h-2.5 w-2.5" aria-hidden="true" /> Khóa
+                      </span>
+                    )}
+                  </label>
+                  <select
+                    id={`mob-position-${emp.id}`}
+                    disabled={sLock.locked}
+                    value={rec.role || emp.role}
+                    onChange={(e) => onUpdateRole(schedDate, emp.id, e.target.value)}
+                    aria-label={`Vị trí ngày ${formatVNDate(schedDate)} cho ${emp.name}`}
+                    className="h-11 w-full border-0 border-b border-[#8d8d8d] bg-[#f4f4f4] px-2 text-xs disabled:cursor-not-allowed disabled:bg-[#e0e0e0] disabled:text-[#525252]"
+                  >
+                    {!allPositions.includes(rec.role || emp.role) && (
+                      <option value={rec.role || emp.role}>{rec.role || emp.role}</option>
+                    )}
+                    {allPositions.map((role) => (
+                      <option key={role} value={role}>
+                        {role}
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </div>
             );
           })
@@ -325,13 +358,19 @@ export function ScheduleEditorTab({
 
       {/* Desktop / Tablet Inline Shift + OT Table (>=768px) */}
       <div className="hidden overflow-x-auto border border-[#e2e8f0] bg-white md:block">
-        <table className="w-full border-collapse text-left text-sm">
+        <table className="w-max min-w-[1400px] border-collapse text-left text-sm">
           <thead>
             <tr className="border-b border-[#e2e8f0] bg-[#f8fafc] font-mono text-[11px] font-medium text-[#475569] uppercase">
-              <th className="px-3 py-2.5 whitespace-nowrap">Mã NV</th>
-              <th className="px-3 py-2.5 whitespace-nowrap">Họ và Tên</th>
+              <th className="sticky left-0 z-30 w-[110px] min-w-[110px] bg-[#f8fafc] px-3 py-2.5 whitespace-nowrap">
+                Mã NV
+              </th>
+              <th className="sticky left-[110px] z-30 w-[180px] min-w-[180px] bg-[#f8fafc] px-3 py-2.5 whitespace-nowrap">
+                Tên NV
+              </th>
+              <th className="sticky left-[290px] z-30 w-[180px] min-w-[180px] bg-[#f8fafc] px-3 py-2.5 whitespace-nowrap">
+                Vị trí
+              </th>
               <th className="px-3 py-2.5 whitespace-nowrap">Task</th>
-              <th className="px-3 py-2.5 whitespace-nowrap">Vị trí</th>
               <th className="px-3 py-2.5 whitespace-nowrap">Ca làm việc</th>
               <th className="px-3 py-2.5 whitespace-nowrap">Trạng thái Ca</th>
               <th className="px-3 py-2.5 text-right whitespace-nowrap">Giờ OT</th>
@@ -352,16 +391,21 @@ export function ScheduleEditorTab({
                 const sDef = getShiftDef(shifts, rec.shiftCode);
                 const ot = Number(rec.otHours) || 0;
                 const stdHrs = getShiftEffectiveStdHours(sDef);
+                const rowBackground = idx % 2 === 1 ? 'bg-[#fcfcfd]' : 'bg-white';
 
                 return (
                   <tr
                     key={emp.id}
-                    className={`border-t border-[#e2e8f0] transition-colors hover:bg-[#f8fafc] ${
-                      idx % 2 === 1 ? 'bg-[#fcfcfd]' : 'bg-white'
-                    }`}
+                    className={`group border-t border-[#e2e8f0] transition-colors hover:bg-[#f8fafc] ${rowBackground}`}
                   >
-                    <td className="font-mono-num px-3 py-2">{emp.id}</td>
-                    <td className="px-3 py-2">
+                    <td
+                      className={`font-mono-num sticky left-0 z-10 w-[110px] min-w-[110px] px-3 py-2 group-hover:bg-[#f8fafc] ${rowBackground}`}
+                    >
+                      {emp.id}
+                    </td>
+                    <td
+                      className={`sticky left-[110px] z-10 w-[180px] min-w-[180px] px-3 py-2 group-hover:bg-[#f8fafc] ${rowBackground}`}
+                    >
                       <button
                         type="button"
                         onClick={() => onSelectEmployee(emp.id)}
@@ -371,10 +415,29 @@ export function ScheduleEditorTab({
                         {emp.name}
                       </button>
                     </td>
+                    <td
+                      className={`sticky left-[290px] z-10 w-[180px] min-w-[180px] px-3 py-2 group-hover:bg-[#f8fafc] ${rowBackground}`}
+                    >
+                      <select
+                        disabled={sLock.locked}
+                        value={rec.role || emp.role}
+                        onChange={(e) => onUpdateRole(schedDate, emp.id, e.target.value)}
+                        aria-label={`Vị trí ngày ${formatVNDate(schedDate)} cho ${emp.name}`}
+                        className="h-8 w-full min-w-[150px] border-0 border-b border-[#8d8d8d] bg-transparent px-1 text-[13px] disabled:cursor-not-allowed disabled:text-[#525252]"
+                      >
+                        {!allPositions.includes(rec.role || emp.role) && (
+                          <option value={rec.role || emp.role}>{rec.role || emp.role}</option>
+                        )}
+                        {allPositions.map((role) => (
+                          <option key={role} value={role}>
+                            {role}
+                          </option>
+                        ))}
+                      </select>
+                    </td>
                     <td className="px-3 py-2 font-semibold" style={{ color: getDeptColor(emp.dept) }}>
                       {emp.dept}
                     </td>
-                    <td className="px-3 py-2">{emp.role}</td>
                     <td className="px-3 py-2">
                       <select
                         disabled={sLock.locked}

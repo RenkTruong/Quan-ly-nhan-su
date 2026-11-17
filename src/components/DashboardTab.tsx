@@ -493,7 +493,13 @@ export function DashboardTab({
     <div className="grid gap-5 md:gap-6 [&>*]:min-w-0">
       {/* Section Heading */}
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#e2e8f0] pb-3">
-        <h2 className="text-lg font-semibold text-[#0f172a] sm:text-xl">Báo cáo Tổng quan Kho OB</h2>
+        <h2 className="text-lg font-semibold text-[#0f172a] sm:text-xl">
+          {selectedEmployee
+            ? `Báo cáo nhân viên · ${selectedEmployee.name}`
+            : selectedDeptDef
+              ? `Báo cáo Task · ${selectedDeptDef.name}`
+              : 'Báo cáo Tổng quan Kho OB'}
+        </h2>
         {drilldown.mode !== 'all' && (
           <button
             type="button"
@@ -501,11 +507,13 @@ export function DashboardTab({
             className="inline-flex min-h-[34px] cursor-pointer items-center gap-1.5 border border-[#cbd5e1] bg-white px-3 py-1 text-xs font-medium whitespace-nowrap text-[#0f172a] transition-colors hover:bg-[#f8fafc]"
           >
             <X className="h-3.5 w-3.5 text-[#64748b]" aria-hidden="true" />
-            Bỏ chọn · Xem tổng OB
+            Tổng cả OB
           </button>
         )}
       </div>
 
+      {drilldown.mode === 'all' && (
+        <>
       {/* Row 1: Summary Table + OB Day vs Night Doughnut */}
       <div className="grid grid-cols-1 gap-5 md:gap-6 lg:grid-cols-12">
         <div className="min-w-0 border border-[#e2e8f0] bg-white p-4 sm:p-5 lg:col-span-7">
@@ -785,6 +793,8 @@ export function DashboardTab({
           })}
         </div>
       </div>
+        </>
+      )}
 
       {/* Row 5: Interactive Drill-down Panel */}
       <div
